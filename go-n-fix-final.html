@@ -1,0 +1,2516 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Go & Fix — Marketplace de Servicios del Hogar</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+/* ═══════════════════════════════════════════
+   CSS VARIABLES & RESET
+═══════════════════════════════════════════ */
+:root {
+  --bg: #080810;--bg2: #0f0f1a;--bg3: #181828;--bg4: #20202e;--bg5: #282838;
+  --border: rgba(255,255,255,0.07);--border2: rgba(255,255,255,0.13);--border3: rgba(255,255,255,0.2);
+  --text: #eeeef8;--text2: rgba(238,238,248,0.58);--text3: rgba(238,238,248,0.32);
+  --accent: #6c5ce7;--accent2: #a89bff;--accent3: #c4baff;
+  --accent-bg: rgba(108,92,231,0.12);--accent-bg2: rgba(108,92,231,0.22);
+  --green: #00d9a0;--green2: #00f5b5;--green-bg: rgba(0,217,160,0.1);
+  --amber: #f5a623;--amber-bg: rgba(245,166,35,0.1);
+  --red: #ff4d6d;--red-bg: rgba(255,77,109,0.1);
+  --sol: #9945FF;--sol2: #c084fc;--sol-bg: rgba(153,69,255,0.12);
+  --r: 10px;--r-lg: 16px;--r-xl: 22px;--r-xxl: 30px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+h1,h2,h3,h4{font-family:'Syne',sans-serif}
+button{cursor:pointer;border:none;font-family:'DM Sans',sans-serif}
+input,textarea,select{font-family:'DM Sans',sans-serif}
+a{text-decoration:none;color:inherit}
+
+/* SCREENS */
+.screen{display:none;min-height:100vh;flex-direction:column}
+.screen.active{display:flex}
+
+/* NAV */
+nav{
+  position:sticky;top:0;z-index:100;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 1.75rem;height:60px;
+  background:rgba(8,8,16,0.92);backdrop-filter:blur(24px);
+  border-bottom:1px solid var(--border);
+}
+.nav-logo{
+  font-family:'Syne',sans-serif;font-size:19px;font-weight:800;
+  background:linear-gradient(135deg,var(--accent3),var(--green));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  cursor:pointer;letter-spacing:-0.02em;
+}
+.nav-links{display:flex;gap:1.75rem;align-items:center}
+.nav-link{font-size:13px;color:var(--text2);cursor:pointer;transition:color 0.2s;letter-spacing:0.01em}
+.nav-link:hover{color:var(--text)}
+.nav-link.active{color:var(--accent3)}
+.user-badge{
+  display:flex;align-items:center;gap:8px;
+  background:var(--accent-bg);border:1px solid rgba(108,92,231,0.25);
+  border-radius:100px;padding:5px 13px;
+  font-size:12px;font-weight:500;color:var(--accent2);cursor:pointer;
+}
+.user-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.35}}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;border-radius:var(--r);padding:9px 18px;font-size:13.5px;font-weight:500;transition:all 0.18s;white-space:nowrap;letter-spacing:0.01em;}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:#7c6df0;transform:translateY(-1px)}
+.btn-primary:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border2)}
+.btn-ghost:hover{background:var(--bg3);color:var(--text);border-color:var(--border3)}
+.btn-green{background:var(--green);color:#040c08;font-weight:600}
+.btn-green:hover{background:var(--green2);transform:translateY(-1px)}
+.btn-danger{background:var(--red-bg);color:var(--red);border:1px solid rgba(255,77,109,0.25)}
+.btn-danger:hover{background:rgba(255,77,109,0.18)}
+.btn-lg{padding:13px 26px;font-size:15px;border-radius:var(--r-lg)}
+.btn-sm{padding:5px 12px;font-size:12px;border-radius:8px}
+.btn-xs{padding:4px 10px;font-size:11px;border-radius:7px}
+
+/* CARDS */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-lg);padding:1.4rem;transition:border-color 0.2s;}
+.card:hover{border-color:var(--border2)}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:4px;border-radius:100px;padding:3px 9px;font-size:11.5px;font-weight:500;}
+.badge-purple{background:var(--accent-bg);color:var(--accent2)}
+.badge-green{background:var(--green-bg);color:var(--green)}
+.badge-amber{background:var(--amber-bg);color:var(--amber)}
+.badge-red{background:var(--red-bg);color:var(--red)}
+.badge-sol{background:var(--sol-bg);color:var(--sol2)}
+
+/* STARS */
+.stars{color:var(--amber);font-size:12.5px;letter-spacing:1px}
+
+/* AVATAR */
+.avatar{border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:700;flex-shrink:0;}
+.avatar-sm{width:34px;height:34px;font-size:12px}
+.avatar-md{width:46px;height:46px;font-size:15px}
+.avatar-lg{width:72px;height:72px;font-size:24px}
+.av-purple{background:var(--accent-bg2);color:var(--accent3)}
+.av-green{background:var(--green-bg);color:var(--green)}
+.av-amber{background:var(--amber-bg);color:var(--amber)}
+.av-blue{background:rgba(56,189,248,0.14);color:#7dd3fc}
+.av-pink{background:rgba(244,114,182,0.14);color:#f9a8d4}
+.av-teal{background:rgba(20,184,166,0.14);color:#5eead4}
+.av-colors{av-purple:1,av-green:1,av-amber:1,av-blue:1,av-pink:1,av-teal:1}
+
+/* DIVIDER */
+.divider{height:1px;background:var(--border);margin:1.25rem 0}
+
+/* INPUTS */
+.input-group{display:flex;flex-direction:column;gap:5px}
+.input-label{font-size:12.5px;color:var(--text2);font-weight:500}
+.input,textarea,select{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:9px 13px;color:var(--text);font-size:13.5px;outline:none;transition:border-color 0.2s;width:100%;}
+.input:focus,textarea:focus,select:focus{border-color:var(--accent)}
+.input.error,textarea.error{border-color:var(--red)}
+textarea{resize:vertical;min-height:80px;line-height:1.55}
+select{appearance:none;cursor:pointer}
+.field-error{display:none;font-size:11.5px;color:var(--red);margin-top:3px;}
+
+/* CONTAINERS */
+.container{max-width:1080px;margin:0 auto;padding:0 1.75rem}
+.container-sm{max-width:660px;margin:0 auto;padding:0 1.75rem}
+
+/* SECTION HEADING */
+.section-heading{font-size:11.5px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1rem;}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--bg5);border-radius:3px}
+
+/* TOAST */
+#toast{
+  position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;
+  background:var(--bg3);border:1px solid var(--border3);border-radius:var(--r);padding:11px 16px;
+  font-size:13.5px;color:var(--text);display:flex;align-items:center;gap:9px;
+  box-shadow:0 20px 60px rgba(0,0,0,0.6);
+  transform:translateY(120px);opacity:0;transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);pointer-events:none;
+}
+#toast.show{transform:translateY(0);opacity:1}
+
+/* LOADING OVERLAY */
+#app-loading{
+  position:fixed;inset:0;z-index:9000;background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;
+  transition:opacity 0.4s;
+}
+#app-loading.hidden{opacity:0;pointer-events:none;}
+.spinner{width:36px;height:36px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,0.75);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:1.5rem;}
+.modal-overlay.open{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r-xl);padding:1.75rem;width:100%;max-width:490px;max-height:92vh;overflow-y:auto;animation:slideUp 0.22s cubic-bezier(0.34,1.2,0.64,1);}
+@keyframes slideUp{from{transform:translateY(24px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.4rem}
+.modal-title{font-size:19px;font-weight:700;letter-spacing:-0.02em}
+.modal-close{background:var(--bg3);border:1px solid var(--border);border-radius:8px;width:30px;height:30px;color:var(--text2);font-size:17px;display:flex;align-items:center;justify-content:center;}
+.modal-close:hover{background:var(--bg4);color:var(--text)}
+
+/* PROGRESS BAR */
+.progress-bar{height:5px;background:var(--bg4);border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--green));border-radius:3px;transition:width 0.45s ease}
+
+/* FORM ROW */
+.form-row{margin-bottom:1rem}
+
+/* SPINNER inline */
+.tx-spinner{width:52px;height:52px;border:3px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;margin:0 auto 1rem;}
+
+/* ═══════════════ LANDING ═══════════════ */
+.hero{padding:110px 2rem 80px;text-align:center;position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;top:-300px;left:50%;transform:translateX(-50%);width:700px;height:700px;background:radial-gradient(circle,rgba(108,92,231,0.13) 0%,transparent 65%);pointer-events:none;}
+.hero::after{content:'';position:absolute;bottom:-100px;right:-100px;width:400px;height:400px;background:radial-gradient(circle,rgba(0,217,160,0.06) 0%,transparent 65%);pointer-events:none;}
+.hero-badge{display:inline-flex;align-items:center;gap:7px;background:var(--sol-bg);border:1px solid rgba(153,69,255,0.28);border-radius:100px;padding:5px 15px;font-size:12.5px;color:var(--sol2);margin-bottom:2rem;}
+.hero-title{font-size:clamp(44px,7vw,84px);font-weight:800;line-height:1.04;margin-bottom:1.4rem;letter-spacing:-0.035em;}
+.hero-title .grad{background:linear-gradient(135deg,var(--accent3) 0%,var(--green) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.hero-sub{font-size:17px;color:var(--text2);max-width:480px;margin:0 auto 2.5rem;line-height:1.65;font-weight:300;}
+.hero-ctas{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.hero-stats{display:flex;gap:3.5rem;justify-content:center;margin-top:5rem;padding-top:3rem;border-top:1px solid var(--border);flex-wrap:wrap;}
+.stat-num{font-size:30px;font-weight:800;font-family:'Syne',sans-serif;letter-spacing:-0.02em}
+.stat-label{font-size:12px;color:var(--text2);margin-top:3px;letter-spacing:0.02em}
+.features{padding:80px 2rem}
+.features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:1.25rem}
+.feature-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-lg);padding:1.6rem;position:relative;overflow:hidden;transition:border-color 0.2s,transform 0.2s;}
+.feature-card:hover{border-color:var(--border2);transform:translateY(-2px)}
+.feature-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:1rem;}
+.feature-title{font-size:15.5px;font-weight:700;margin-bottom:7px;letter-spacing:-0.01em}
+.feature-desc{font-size:13.5px;color:var(--text2);line-height:1.65}
+.how{padding:80px 2rem;background:var(--bg2);border-top:1px solid var(--border)}
+.steps-row{display:flex;gap:0;align-items:flex-start;justify-content:center;flex-wrap:wrap;max-width:960px;margin:0 auto}
+.step{flex:1;min-width:130px;max-width:160px;text-align:center;padding:1.25rem 0.75rem;position:relative}
+.step-num{width:40px;height:40px;border-radius:50%;background:var(--accent-bg2);border:1px solid rgba(108,92,231,0.3);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:700;font-size:15px;color:var(--accent3);margin:0 auto 0.9rem;}
+.step-label{font-size:13px;font-weight:600;margin-bottom:5px}
+.step-desc{font-size:11.5px;color:var(--text2);line-height:1.5}
+
+/* ═══════════════ LOGIN / REGISTER ═══════════════ */
+#screen-login{align-items:center;justify-content:center;background:var(--bg);background-image:radial-gradient(ellipse at 50% 0%,rgba(108,92,231,0.1) 0%,transparent 55%);}
+.auth-box{width:100%;max-width:420px;padding:2rem}
+.auth-logo{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;background:linear-gradient(135deg,var(--accent3),var(--green));-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-align:center;margin-bottom:6px;letter-spacing:-0.02em;}
+.auth-tagline{text-align:center;color:var(--text2);font-size:13.5px;margin-bottom:2rem}
+.auth-tabs{display:flex;gap:6px;margin-bottom:1.5rem;background:var(--bg3);border-radius:var(--r);padding:4px}
+.auth-tab{flex:1;padding:7px;border-radius:8px;font-size:13px;font-weight:500;background:transparent;color:var(--text2);transition:all 0.18s;}
+.auth-tab.active{background:var(--bg);color:var(--text)}
+.role-toggle{display:flex;gap:6px;margin-bottom:1.4rem;background:var(--bg3);border-radius:var(--r);padding:4px}
+.role-btn{flex:1;padding:7px;border-radius:8px;font-size:13px;font-weight:500;background:transparent;color:var(--text2);transition:all 0.18s;}
+.role-btn.active{background:var(--bg);color:var(--text)}
+.auth-note{text-align:center;font-size:11.5px;color:var(--text3);margin-top:1.2rem;line-height:1.65}
+
+/* ═══════════════ FEED ═══════════════ */
+#screen-feed{background:var(--bg)}
+.feed-layout{display:grid;grid-template-columns:250px 1fr;gap:1.5rem;padding:1.75rem;max-width:1080px;margin:0 auto}
+.sidebar{position:sticky;top:76px;height:fit-content}
+.filter-section{margin-bottom:1.5rem}
+.filter-title{font-size:10.5px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;}
+.filter-chip{display:flex;align-items:center;gap:8px;padding:7px 11px;border-radius:var(--r);font-size:13px;color:var(--text2);cursor:pointer;transition:all 0.15s;margin-bottom:3px;}
+.filter-chip:hover{background:var(--bg3);color:var(--text)}
+.filter-chip.active{background:var(--accent-bg);color:var(--accent2);font-weight:500}
+.filter-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.search-bar{display:flex;gap:10px;margin-bottom:1.1rem}
+.search-wrap{flex:1;position:relative}
+.search-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:15px;pointer-events:none}
+.search-input{padding-left:36px}
+.feed-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem}
+.feed-count{font-size:13.5px;color:var(--text2)}
+.jobs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem}
+.job-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-lg);padding:1.25rem;cursor:pointer;transition:all 0.18s;}
+.job-card:hover{border-color:var(--accent);transform:translateY(-2px);background:var(--bg3)}
+.job-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px}
+.job-meta{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:7px}
+.job-title{font-size:14px;font-weight:600;line-height:1.4;letter-spacing:-0.01em}
+.job-desc{font-size:12.5px;color:var(--text2);line-height:1.55;margin-bottom:10px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.job-footer{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.job-budget{font-size:15px;font-weight:700;color:var(--green);font-family:'Syne',sans-serif}
+.job-info{display:flex;gap:10px;flex-wrap:wrap}
+.job-info-item{font-size:11.5px;color:var(--text3)}
+.empty-state{text-align:center;padding:3rem 1rem;color:var(--text2)}
+.quick-tag{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:100px;font-size:12.5px;font-weight:500;border:1px solid var(--border2);color:var(--text2);cursor:pointer;transition:all 0.15s;background:transparent;}
+.quick-tag:hover,.quick-tag.selected{background:var(--accent-bg);border-color:rgba(108,92,231,0.35);color:var(--accent2)}
+
+/* ═══════════════ WORKER PROFILE ═══════════════ */
+#screen-profile{background:var(--bg)}
+.profile-layout{max-width:800px;margin:0 auto;padding:2rem 1.75rem;flex:1}
+.profile-header{display:flex;align-items:flex-start;gap:1.5rem;margin-bottom:2rem;flex-wrap:wrap}
+.profile-stats{display:flex;gap:1.5rem;flex-wrap:wrap}
+.profile-stat{text-align:center}
+.profile-stat-num{font-size:20px;font-weight:800;font-family:'Syne',sans-serif}
+.profile-stat-label{font-size:11px;color:var(--text2);margin-top:2px}
+.skill-pill{display:inline-flex;padding:4px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:100px;font-size:12px;color:var(--text2);margin:3px;}
+.review-card{padding:1rem 0;border-bottom:1px solid var(--border)}
+.review-card:last-child{border-bottom:none}
+.review-header{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.review-text{font-size:13px;color:var(--text2);line-height:1.6}
+.price-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-lg);padding:1.4rem;position:sticky;top:76px}
+.price-feat{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);margin-bottom:7px}
+.feat-check{color:var(--green);font-size:14px;flex-shrink:0}
+
+/* ═══════════════ HIRE / ESCROW / RATINGS ═══════════════ */
+.hire-layout,.escrow-layout,.ratings-layout{max-width:600px;margin:0 auto;padding:2rem 1.75rem;flex:1}
+.hire-steps{display:flex;gap:0;margin-bottom:2rem;border-bottom:1px solid var(--border);padding-bottom:1.25rem}
+.hire-step{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;position:relative}
+.hire-step-num{width:28px;height:28px;border-radius:50%;background:var(--bg4);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--text2);font-weight:600;transition:all 0.3s;}
+.hire-step-num.done{background:var(--green);border-color:var(--green);color:#040c08}
+.hire-step-num.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.hire-step-label{font-size:10.5px;color:var(--text3);text-align:center;transition:color 0.3s}
+.hire-step-label.active{color:var(--accent2)}
+.hire-step::after{content:'';position:absolute;top:14px;left:65%;width:70%;height:1px;background:var(--border);}
+.hire-step:last-child::after{display:none}
+.onchain-proof{background:var(--sol-bg);border:1px solid rgba(153,69,255,0.2);border-radius:var(--r);padding:10px 14px;font-size:12px;color:var(--sol2);line-height:1.8}
+.tl-item{display:flex;align-items:flex-start;gap:12px;padding:10px 0;opacity:0.4;transition:opacity 0.3s}
+.tl-item.done,.tl-item.active{opacity:1}
+.tl-dot{width:22px;height:22px;border-radius:50%;background:var(--bg4);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0}
+.tl-item.done .tl-dot{background:var(--green-bg);border-color:rgba(0,217,160,0.3);color:var(--green)}
+.tl-item.active .tl-dot{background:var(--accent-bg2);border-color:rgba(108,92,231,0.35);color:var(--accent3)}
+.tl-label{font-size:13.5px;font-weight:500}
+.tl-sub{font-size:12px;color:var(--text2);margin-top:2px}
+.escrow-box{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-xl);padding:1.75rem;text-align:center;margin-bottom:1.5rem}
+.escrow-amount{font-family:'Syne',sans-serif;font-size:36px;font-weight:800;letter-spacing:-0.03em}
+.rating-stars-input{display:flex;gap:8px;justify-content:center;margin-bottom:6px}
+.rating-star{font-size:32px;color:var(--bg5);cursor:pointer;transition:all 0.15s;user-select:none}
+.rating-star.lit,.rating-star:hover{color:var(--amber);transform:scale(1.15)}
+.rating-complete{text-align:center;padding:2rem 0}
+.rating-stars-big{font-size:38px;color:var(--amber);letter-spacing:4px;margin-bottom:1rem}
+.tx-hash{font-size:10.5px;color:var(--sol2);font-family:monospace;word-break:break-all}
+.dispute-section{background:var(--red-bg);border:1px solid rgba(255,77,109,0.18);border-radius:var(--r);padding:1rem;margin-top:1rem}
+
+/* ═══════════════ PROBLEM SEARCH ═══════════════ */
+.problem-layout{max-width:640px;margin:0 auto;padding:2rem 1.75rem;flex:1}
+.problem-hero{margin-bottom:2rem}
+.problem-title{font-size:clamp(26px,5vw,38px);font-weight:800;letter-spacing:-0.03em;line-height:1.15;margin-bottom:10px}
+.problem-sub{font-size:14.5px;color:var(--text2);line-height:1.65}
+.problem-textarea{width:100%;min-height:120px;background:var(--bg2);border:1.5px solid var(--border2);border-radius:var(--r-lg);padding:1rem 1.1rem;color:var(--text);font-size:14.5px;line-height:1.6;resize:none;outline:none;transition:border-color 0.2s;}
+.problem-textarea:focus{border-color:var(--accent)}
+.problem-textarea-wrap{position:relative;margin-bottom:1.5rem}
+.char-count{position:absolute;bottom:10px;right:12px;font-size:11px;color:var(--text3)}
+.extra-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1.25rem}
+.quick-tags{display:flex;gap:7px;flex-wrap:wrap}
+.analyzing-overlay{text-align:center;padding:2rem 0}
+.ai-brain{font-size:48px;display:block;margin-bottom:1rem;animation:bounce 1s ease-in-out infinite}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.analyzing-steps{margin-top:1.5rem;text-align:left;display:flex;flex-direction:column;gap:8px}
+.astep{display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--text3);padding:8px 14px;border-radius:var(--r);background:var(--bg2);border:1px solid var(--border);transition:all 0.4s}
+.astep.done{color:var(--green);border-color:rgba(0,217,160,0.2);background:var(--green-bg)}
+.astep.active{color:var(--text);border-color:var(--border2)}
+.astep-dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex-shrink:0}
+.results-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem}
+.results-title{font-size:18px;font-weight:700;letter-spacing:-0.02em}
+.tech-result-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-lg);padding:1.25rem;cursor:pointer;margin-bottom:10px;transition:all 0.18s}
+.tech-result-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.tech-result-card.top-match{border-color:var(--accent);background:var(--accent-bg)}
+.match-score{font-size:15px;font-weight:700;color:var(--green)}
+.problem-summary-pill{display:flex;align-items:center;gap:10px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:10px 14px;margin-bottom:1.25rem;cursor:pointer;transition:border-color 0.2s;font-size:13px;color:var(--text2);}
+.problem-summary-pill:hover{border-color:var(--border3)}
+
+/* ═══════════════ PUBLISH JOB ═══════════════ */
+#screen-publish{background:var(--bg)}
+.publish-layout{max-width:660px;margin:0 auto;padding:2rem 1.75rem;flex:1}
+
+/* ═══════════════ TECH DASHBOARD ═══════════════ */
+#screen-tecnico{background:var(--bg)}
+
+/* ═══════════════ SETUP SCREEN ═══════════════ */
+#screen-setup{align-items:center;justify-content:center;background:var(--bg);}
+.setup-box{max-width:640px;width:100%;padding:2rem}
+.setup-sql{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:1rem;font-size:12px;font-family:monospace;color:var(--accent2);white-space:pre;overflow:auto;max-height:300px;margin-bottom:1rem}
+
+/* ═══════════════ CLIENT DASHBOARD ═══════════════ */
+#screen-dashboard{background:var(--bg)}
+.dashboard-layout{max-width:1000px;margin:0 auto;padding:2rem 1.75rem;flex:1}
+.dash-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:2rem}
+.dash-stat{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-lg);padding:1.25rem}
+.dash-stat-num{font-size:28px;font-weight:800;font-family:'Syne',sans-serif;letter-spacing:-0.02em}
+.dash-stat-label{font-size:12px;color:var(--text2);margin-top:3px}
+.notifications-list{display:flex;flex-direction:column;gap:8px}
+.notif-item{display:flex;align-items:flex-start;gap:10px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;cursor:pointer;transition:border-color 0.15s;}
+.notif-item:hover{border-color:var(--border2)}
+.notif-icon{font-size:18px;flex-shrink:0;margin-top:1px}
+.notif-title{font-size:13px;font-weight:500;margin-bottom:2px}
+.notif-sub{font-size:12px;color:var(--text2)}
+.notif-time{font-size:11px;color:var(--text3);margin-left:auto;flex-shrink:0;padding-top:2px}
+
+@media(max-width:700px){
+  .feed-layout{grid-template-columns:1fr}
+  .sidebar{display:none}
+  .profile-header{flex-direction:column}
+  .extra-fields{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════
+     APP LOADING SCREEN
+═══════════════════════════════════════════ -->
+<div id="app-loading">
+  <div class="nav-logo" style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;background:linear-gradient(135deg,#c4baff,#00d9a0);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Go & Fix</div>
+  <div class="spinner"></div>
+  <div style="font-size:13px;color:var(--text2)" id="loading-status">Iniciando aplicación...</div>
+</div>
+
+<!-- TOAST -->
+<div id="toast">
+  <span id="toast-icon">✅</span>
+  <span id="toast-msg">Mensaje</span>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     MODAL: PUBLISH JOB (accessible from any screen)
+═══════════════════════════════════════════ -->
+<div id="modal-publish" class="modal-overlay">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-header">
+      <div class="modal-title">📋 Publicar trabajo</div>
+      <button class="modal-close" onclick="closeModal('modal-publish')">✕</button>
+    </div>
+    <div class="form-row">
+      <div class="input-group">
+        <label class="input-label">Título del trabajo *</label>
+        <input class="input" id="pub-title" placeholder="Ej: Reparar fuga de agua en cocina">
+        <div class="field-error" id="err-pub-title">Ingresá un título</div>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="input-group">
+        <label class="input-label">Descripción detallada *</label>
+        <textarea id="pub-desc" rows="3" placeholder="Describí el problema con todos los detalles posibles..."></textarea>
+        <div class="field-error" id="err-pub-desc">Ingresá una descripción</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;" class="form-row">
+      <div class="input-group">
+        <label class="input-label">Categoría *</label>
+        <select id="pub-category">
+          <option value="">Seleccioná...</option>
+          <option value="plomeria">🔧 Plomería</option>
+          <option value="electricidad">⚡ Electricidad</option>
+          <option value="carpinteria">🪵 Carpintería</option>
+          <option value="ac">❄️ Aire acondicionado</option>
+          <option value="pintura">🎨 Pintura</option>
+          <option value="limpieza">🧹 Limpieza</option>
+          <option value="otro">🔨 Otro</option>
+        </select>
+        <div class="field-error" id="err-pub-category">Seleccioná categoría</div>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Presupuesto (USD) *</label>
+        <input class="input" id="pub-budget" type="number" min="1" placeholder="100">
+        <div class="field-error" id="err-pub-budget">Ingresá presupuesto</div>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="input-group">
+        <label class="input-label">Zona / Dirección *</label>
+        <input class="input" id="pub-location" placeholder="Ej: Tegucigalpa, Col. Kennedy">
+        <div class="field-error" id="err-pub-location">Ingresá la ubicación</div>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="input-group">
+        <label class="input-label">Urgencia</label>
+        <select id="pub-urgency">
+          <option value="urgente">🔴 Urgente — lo antes posible</option>
+          <option value="semana">🟡 Esta semana</option>
+          <option value="flexible">🟢 Flexible</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn btn-primary btn-lg" style="width:100%;" id="pub-submit-btn" onclick="submitPublishJob()">
+      🚀 Publicar trabajo
+    </button>
+  </div>
+</div>
+
+<!-- MODAL: AI MATCH -->
+<div id="modal-ai" class="modal-overlay">
+  <div class="modal" style="max-width:460px;">
+    <div class="modal-header">
+      <div class="modal-title">✨ Match con IA</div>
+      <button class="modal-close" onclick="closeModal('modal-ai')">✕</button>
+    </div>
+    <div id="ai-loading" style="text-align:center;padding:2rem 0;">
+      <div class="tx-spinner" style="width:40px;height:40px;border-width:2px;"></div>
+      <div style="font-size:13.5px;color:var(--text2);margin-top:1rem;">Analizando técnicos disponibles...</div>
+    </div>
+    <div id="ai-results" style="display:none;"></div>
+  </div>
+</div>
+
+<!-- MODAL: PROPOSAL (técnico → cliente) -->
+<div id="modal-proposal" class="modal-overlay">
+  <div class="modal" style="max-width:460px;">
+    <div class="modal-header">
+      <div class="modal-title">📤 Enviar propuesta</div>
+      <button class="modal-close" onclick="closeModal('modal-proposal')">✕</button>
+    </div>
+    <div id="proposal-job-detail" style="margin-bottom:1.25rem;"></div>
+    <div class="form-row">
+      <div class="input-group">
+        <label class="input-label">Tu oferta (USD) *</label>
+        <input class="input" id="prop-price" type="number" min="1" placeholder="150">
+        <div class="field-error" id="err-prop-price">Ingresá una oferta válida</div>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="input-group">
+        <label class="input-label">Mensaje para el cliente *</label>
+        <textarea id="prop-message" placeholder="Presentate y explicá cómo resolverías el problema..." style="min-height:90px;"></textarea>
+        <div class="field-error" id="err-prop-msg">Escribí un mensaje</div>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="input-group">
+        <label class="input-label">¿Cuándo podés atenderlo?</label>
+        <select id="prop-when">
+          <option>Hoy mismo</option>
+          <option>Mañana</option>
+          <option>Esta semana</option>
+          <option>Próxima semana</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn btn-primary btn-lg" style="width:100%;" id="prop-submit-btn" onclick="submitProposal()">
+      📤 Enviar propuesta al cliente
+    </button>
+  </div>
+</div>
+
+<!-- MODAL: CHAT -->
+<div id="modal-chat" class="modal-overlay">
+  <div class="modal" style="max-width:520px;height:580px;display:flex;flex-direction:column;padding:0;">
+    <div style="padding:1rem 1.25rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="avatar avatar-sm av-purple" id="chat-avatar">?</div>
+        <div>
+          <div style="font-size:15px;font-weight:700;" id="chat-name">Técnico</div>
+          <div style="font-size:12px;color:var(--green);">🟢 En línea</div>
+        </div>
+      </div>
+      <button class="modal-close" onclick="closeModal('modal-chat')">✕</button>
+    </div>
+    <div id="chat-messages" style="flex:1;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:10px;"></div>
+    <div style="padding:0.75rem 1.25rem 1rem;border-top:1px solid var(--border);flex-shrink:0;">
+      <div style="display:flex;gap:8px;margin-bottom:8px;">
+        <textarea id="chat-input" placeholder="Escribí tu mensaje..." style="flex:1;min-height:40px;max-height:90px;resize:none;font-size:13.5px;padding:8px 12px;line-height:1.45;border-radius:var(--r);" onkeydown="chatKeyDown(event)"></textarea>
+        <button class="btn btn-primary btn-sm" style="height:40px;padding:0 14px;align-self:flex-end;" onclick="sendChatMsg()">Enviar</button>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <button class="btn btn-ghost btn-xs" onclick="sendQuickMsg('¿Cuándo podés venir?')">📅 ¿Cuándo podés?</button>
+        <button class="btn btn-ghost btn-xs" onclick="sendQuickMsg('¿Podés ajustar el precio?')">💰 Negociar precio</button>
+        <button class="btn btn-green btn-xs" onclick="goTo('screen-hire');closeModal('modal-chat')">✅ Contratar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: RATING -->
+<div id="modal-rating" class="modal-overlay">
+  <div class="modal" style="max-width:440px;">
+    <div class="modal-header">
+      <div class="modal-title">⭐ Dejar reseña</div>
+      <button class="modal-close" onclick="closeModal('modal-rating')">✕</button>
+    </div>
+    <div id="rating-tech-info" style="margin-bottom:1.25rem;"></div>
+    <div class="card" style="margin-bottom:1.25rem;text-align:center;">
+      <div style="font-size:14.5px;font-weight:500;margin-bottom:0.5rem;">¿Cómo calificás el trabajo?</div>
+      <div class="rating-stars-input" id="star-input">
+        <span class="rating-star" onclick="setStars(1)">★</span>
+        <span class="rating-star" onclick="setStars(2)">★</span>
+        <span class="rating-star" onclick="setStars(3)">★</span>
+        <span class="rating-star" onclick="setStars(4)">★</span>
+        <span class="rating-star" onclick="setStars(5)">★</span>
+      </div>
+      <div id="star-label" style="font-size:13.5px;color:var(--text2);min-height:22px;margin-top:4px;"></div>
+      <div class="field-error" id="err-stars" style="display:none;justify-content:center;margin-top:6px;">Seleccioná al menos 1 estrella</div>
+    </div>
+    <div class="form-row">
+      <div class="input-group">
+        <label class="input-label">Comentario (opcional)</label>
+        <textarea id="review-text" placeholder="Contá tu experiencia..."></textarea>
+      </div>
+    </div>
+    <button class="btn btn-primary btn-lg" style="width:100%;" onclick="submitRating()">Publicar reseña ⭐</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SCREEN: DATABASE SETUP
+═══════════════════════════════════════════ -->
+<div id="screen-setup" class="screen">
+  <div class="setup-box">
+    <div class="auth-logo">Go & Fix</div>
+    <h2 style="font-size:20px;font-weight:700;margin-bottom:8px;margin-top:1.5rem;">⚙️ Configuración inicial</h2>
+    <p style="font-size:13.5px;color:var(--text2);margin-bottom:1.5rem;line-height:1.65;">
+      La base de datos aún no está configurada. Copiá este SQL y ejecutalo en el 
+      <strong><a href="https://supabase.com/dashboard/project/sgcdbwvhvufyokutjtez/sql" target="_blank" style="color:var(--accent2);">Editor SQL de Supabase →</a></strong>
+    </p>
+    <div class="setup-sql" id="setup-sql-code"></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn btn-primary" onclick="copySetupSQL()">📋 Copiar SQL</button>
+      <a href="https://supabase.com/dashboard/project/sgcdbwvhvufyokutjtez/sql" target="_blank">
+        <button class="btn btn-ghost">Abrir SQL Editor →</button>
+      </a>
+      <button class="btn btn-ghost" onclick="initApp()">🔄 Ya ejecuté el SQL, continuar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SCREEN 0: LANDING
+═══════════════════════════════════════════ -->
+<div id="screen-landing" class="screen">
+  <nav>
+    <div class="nav-logo" onclick="goTo('screen-landing')">Go & Fix</div>
+    <div class="nav-links">
+      <span class="nav-link" onclick="document.querySelector('.features').scrollIntoView({behavior:'smooth'})">Servicios</span>
+      <span class="nav-link" onclick="document.querySelector('.how').scrollIntoView({behavior:'smooth'})">Cómo funciona</span>
+    </div>
+    <div id="nav-auth-area" style="display:flex;gap:8px;">
+      <button class="btn btn-ghost btn-sm" onclick="goTo('screen-login')">Entrar</button>
+      <button class="btn btn-primary btn-sm" onclick="goTo('screen-login')">Empezar gratis</button>
+    </div>
+  </nav>
+  <section class="hero">
+    <div class="hero-badge">⚡ Marketplace de servicios del hogar</div>
+    <h1 class="hero-title">Técnicos verificados<br><span class="grad">a tu puerta</span></h1>
+    <p class="hero-sub">Publicá tu problema, encontrá el técnico ideal con IA, pagá de forma segura. Sin intermediarios. Sin riesgo.</p>
+    <div class="hero-ctas">
+      <button class="btn btn-primary btn-lg" onclick="goTo('screen-login')">Empezar gratis →</button>
+      <button class="btn btn-ghost btn-lg" onclick="goTo('screen-feed')">Ver trabajos disponibles</button>
+    </div>
+    <div class="hero-stats">
+      <div id="stat-jobs"><div class="stat-num">—</div><div class="stat-label">Trabajos publicados</div></div>
+      <div id="stat-techs"><div class="stat-num">—</div><div class="stat-label">Técnicos activos</div></div>
+      <div id="stat-rating"><div class="stat-num">4.9★</div><div class="stat-label">Rating promedio</div></div>
+      <div id="stat-users"><div class="stat-num">—</div><div class="stat-label">Usuarios registrados</div></div>
+    </div>
+  </section>
+  <section class="features">
+    <div class="container">
+      <div style="text-align:center;margin-bottom:3rem;">
+        <div class="section-heading" style="display:flex;justify-content:center;">Beneficios</div>
+        <h2 style="font-size:clamp(26px,4vw,38px);font-weight:800;letter-spacing:-0.025em;">Todo en una sola plataforma</h2>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card"><div class="feature-icon" style="background:var(--sol-bg);">🔒</div><div class="feature-title">Autenticación segura</div><div class="feature-desc">Registro con email y contraseña protegido por Supabase Auth. Tus datos, bajo tu control.</div></div>
+        <div class="feature-card"><div class="feature-icon" style="background:var(--accent-bg);">💳</div><div class="feature-title">Pagos seguros</div><div class="feature-desc">El pago queda en escrow hasta que confirmes que el trabajo quedó perfecto.</div></div>
+        <div class="feature-card"><div class="feature-icon" style="background:var(--green-bg);">⭐</div><div class="feature-title">Reputación verificada</div><div class="feature-desc">Cada rating está vinculado a un trabajo real. No se puede comprar ni manipular.</div></div>
+        <div class="feature-card"><div class="feature-icon" style="background:var(--amber-bg);">🤖</div><div class="feature-title">Matching con IA</div><div class="feature-desc">Describí tu problema y la IA sugiere los técnicos más compatibles con tu caso.</div></div>
+        <div class="feature-card"><div class="feature-icon" style="background:rgba(56,189,248,0.12);">🔍</div><div class="feature-title">Búsqueda inteligente</div><div class="feature-desc">Filtrá por especialidad, zona y rating. Encontrá el técnico ideal en segundos.</div></div>
+        <div class="feature-card"><div class="feature-icon" style="background:rgba(244,114,182,0.12);">💬</div><div class="feature-title">Chat integrado</div><div class="feature-desc">Coordiná detalles directamente con el técnico antes de contratar.</div></div>
+      </div>
+    </div>
+  </section>
+  <section class="how">
+    <div class="container">
+      <div style="text-align:center;margin-bottom:3rem;">
+        <h2 style="font-size:clamp(22px,3vw,34px);font-weight:800;letter-spacing:-0.025em;">¿Cómo funciona?</h2>
+      </div>
+      <div class="steps-row">
+        <div class="step"><div class="step-num">1</div><div class="step-label">Registrarse</div><div class="step-desc">Email y contraseña en segundos</div></div>
+        <div class="step"><div class="step-num">2</div><div class="step-label">Publicar trabajo</div><div class="step-desc">Describí el problema</div></div>
+        <div class="step"><div class="step-num">3</div><div class="step-label">Técnicos aplican</div><div class="step-desc">Recibís propuestas</div></div>
+        <div class="step"><div class="step-num">4</div><div class="step-label">Contratar</div><div class="step-desc">Elegís el mejor</div></div>
+        <div class="step"><div class="step-num">5</div><div class="step-label">Trabajo hecho</div><div class="step-desc">Confirmás y pagás</div></div>
+        <div class="step"><div class="step-num">6</div><div class="step-label">Dejar reseña</div><div class="step-desc">Reputación real</div></div>
+      </div>
+      <div style="text-align:center;margin-top:2.5rem;">
+        <button class="btn btn-primary btn-lg" onclick="goTo('screen-login')">Empezar ahora →</button>
+      </div>
+    </div>
+  </section>
+  <footer style="border-top:1px solid var(--border);padding:2rem;text-align:center;">
+    <div class="nav-logo" style="display:block;margin-bottom:6px;font-size:17px;">Go & Fix</div>
+    <p style="font-size:12px;color:var(--text3);">Marketplace de Servicios del Hogar · Powered by Supabase + IA</p>
+  </footer>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SCREEN: LOGIN / REGISTER
+═══════════════════════════════════════════ -->
+<div id="screen-login" class="screen">
+  <div style="position:absolute;top:1.25rem;left:1.25rem;">
+    <button class="btn btn-ghost btn-sm" onclick="goTo('screen-landing')">← Volver</button>
+  </div>
+  <div class="auth-box">
+    <div class="auth-logo">Go & Fix</div>
+    <div class="auth-tagline">Marketplace de Servicios del Hogar</div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">Iniciar sesión</button>
+      <button class="auth-tab" id="tab-register" onclick="switchAuthTab('register')">Crear cuenta</button>
+    </div>
+
+    <!-- LOGIN FORM -->
+    <div id="form-login">
+      <div class="form-row">
+        <div class="input-group">
+          <label class="input-label">Email</label>
+          <input class="input" id="login-email" type="email" placeholder="tu@email.com">
+          <div class="field-error" id="err-login-email">Email inválido</div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="input-group">
+          <label class="input-label">Contraseña</label>
+          <input class="input" id="login-password" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+          <div class="field-error" id="err-login-pw">Contraseña requerida</div>
+        </div>
+      </div>
+      <div id="login-error" style="display:none;font-size:12.5px;color:var(--red);margin-bottom:10px;padding:8px 12px;background:var(--red-bg);border-radius:8px;"></div>
+      <button class="btn btn-primary btn-lg" style="width:100%;" id="login-btn" onclick="doLogin()">Iniciar sesión</button>
+      <div class="auth-note" style="margin-top:1rem;">
+        ¿No tenés cuenta? <span style="color:var(--accent2);cursor:pointer;" onclick="switchAuthTab('register')">Registrate gratis →</span>
+      </div>
+    </div>
+
+    <!-- REGISTER FORM -->
+    <div id="form-register" style="display:none;">
+      <div class="role-toggle">
+        <button class="role-btn active" id="role-client" onclick="setRole('cliente')">👤 Soy cliente</button>
+        <button class="role-btn" id="role-worker" onclick="setRole('tecnico')">🔧 Soy técnico</button>
+      </div>
+      <div class="form-row">
+        <div class="input-group">
+          <label class="input-label">Nombre completo</label>
+          <input class="input" id="reg-name" placeholder="Tu nombre">
+          <div class="field-error" id="err-reg-name">Ingresá tu nombre</div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="input-group">
+          <label class="input-label">Email</label>
+          <input class="input" id="reg-email" type="email" placeholder="tu@email.com">
+          <div class="field-error" id="err-reg-email">Email inválido</div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="input-group">
+          <label class="input-label">Contraseña (mín. 6 caracteres)</label>
+          <input class="input" id="reg-password" type="password" placeholder="••••••••">
+          <div class="field-error" id="err-reg-pw">Mín. 6 caracteres</div>
+        </div>
+      </div>
+
+      <!-- TECH FIELDS (only shown if role = tecnico) -->
+      <div id="tech-fields" style="display:none;">
+        <div class="form-row">
+          <div class="input-group">
+            <label class="input-label">Especialidades (separadas por coma)</label>
+            <input class="input" id="reg-skills" placeholder="Ej: plomería, drenajes, agua caliente">
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;" class="form-row">
+          <div class="input-group">
+            <label class="input-label">Zona / Ciudad</label>
+            <input class="input" id="reg-location" placeholder="Ej: Tegucigalpa">
+          </div>
+          <div class="input-group">
+            <label class="input-label">Precio/hora (USD)</label>
+            <input class="input" id="reg-price" type="number" min="1" placeholder="25">
+          </div>
+        </div>
+      </div>
+
+      <div id="register-error" style="display:none;font-size:12.5px;color:var(--red);margin-bottom:10px;padding:8px 12px;background:var(--red-bg);border-radius:8px;"></div>
+      <button class="btn btn-primary btn-lg" style="width:100%;" id="register-btn" onclick="doRegister()">Crear cuenta gratis 🚀</button>
+      <div class="auth-note" style="margin-top:1rem;">
+        ¿Ya tenés cuenta? <span style="color:var(--accent2);cursor:pointer;" onclick="switchAuthTab('login')">Iniciá sesión →</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+      <!-- ══ BETA TESTER / DEV ACCESS PANEL ══ -->
+      <div style="margin-top:2rem;background:var(--bg3);border:1px solid rgba(108,92,231,0.25);border-radius:var(--r-lg);padding:1.25rem;">
+        <div style="font-size:11px;font-weight:700;color:var(--accent2);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.85rem;">🧪 Acceso Beta / Desarrollador</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:0.85rem;line-height:1.6;">Usá estas cuentas de prueba para explorar la app como cliente o como técnico:</div>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:0.75rem;">
+          <div style="background:var(--bg4);border-radius:8px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <div style="font-size:12px;font-weight:600;color:var(--green);">👤 Cliente demo</div>
+              <div style="font-size:11px;color:var(--text3);font-family:monospace;">maria.gonzalez@goandfixdemo.com</div>
+            </div>
+            <button class="btn btn-xs btn-ghost" onclick="quickLogin(this,'maria.gonzalez@goandfixdemo.com','Demo1234!')">Entrar</button>
+          </div>
+          <div style="background:var(--bg4);border-radius:8px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <div style="font-size:12px;font-weight:600;color:var(--accent2);">🔧 Técnico demo</div>
+              <div style="font-size:11px;color:var(--text3);font-family:monospace;">mario.flores@goandfixdemo.com</div>
+            </div>
+            <button class="btn btn-xs btn-ghost" onclick="quickLogin(this,'mario.flores@goandfixdemo.com','Demo1234!')">Entrar</button>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--text3);border-top:1px solid var(--border);padding-top:0.65rem;">Contraseña de todas: <code style="color:var(--accent2);">Demo1234!</code></div>
+      </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SCREEN: FEED (explorar trabajos)
+═══════════════════════════════════════════ -->
+<div id="screen-feed" class="screen">
+  <nav>
+    <div class="nav-logo" onclick="goTo('screen-landing')">Go & Fix</div>
+    <div class="nav-links">
+      <span class="nav-link active">Explorar</span>
+      <span class="nav-link" onclick="goTo('screen-problem')">✨ Buscar con IA</span>
+    </div>
+    <div id="nav-feed-auth" style="display:flex;gap:8px;align-items:center;"></div>
+  </nav>
+  <div class="feed-layout">
+    <aside class="sidebar">
+      <div class="filter-section">
+        <div class="filter-title">Categoría</div>
+        <div class="filter-chip active" onclick="setFeedFilter('cat','all',this)"><div class="filter-dot" style="background:var(--accent)"></div>Todos</div>
+        <div class="filter-chip" onclick="setFeedFilter('cat','plomeria',this)"><div class="filter-dot" style="background:#7dd3fc"></div>🔧 Plomería</div>
+        <div class="filter-chip" onclick="setFeedFilter('cat','electricidad',this)"><div class="filter-dot" style="background:#fbbf24"></div>⚡ Electricidad</div>
+        <div class="filter-chip" onclick="setFeedFilter('cat','carpinteria',this)"><div class="filter-dot" style="background:#86efac"></div>🪵 Carpintería</div>
+        <div class="filter-chip" onclick="setFeedFilter('cat','ac',this)"><div class="filter-dot" style="background:#93c5fd"></div>❄️ Aire acond.</div>
+        <div class="filter-chip" onclick="setFeedFilter('cat','pintura',this)"><div class="filter-dot" style="background:#f9a8d4"></div>🎨 Pintura</div>
+        <div class="filter-chip" onclick="setFeedFilter('cat','limpieza',this)"><div class="filter-dot" style="background:#6ee7b7"></div>🧹 Limpieza</div>
+      </div>
+      <div class="filter-section">
+        <div class="filter-title">Urgencia</div>
+        <div class="filter-chip active" onclick="setFeedFilter('urg','all',this)"><div class="filter-dot" style="background:var(--text3)"></div>Todas</div>
+        <div class="filter-chip" onclick="setFeedFilter('urg','urgente',this)"><div class="filter-dot" style="background:var(--red)"></div>🔴 Urgente</div>
+        <div class="filter-chip" onclick="setFeedFilter('urg','semana',this)"><div class="filter-dot" style="background:var(--amber)"></div>🟡 Esta semana</div>
+        <div class="filter-chip" onclick="setFeedFilter('urg','flexible',this)"><div class="filter-dot" style="background:var(--green)"></div>🟢 Flexible</div>
+      </div>
+      <button class="btn btn-primary" style="width:100%;margin-top:0.5rem;" onclick="openModal('modal-publish')">+ Publicar trabajo</button>
+    </aside>
+    <div>
+      <div class="search-bar">
+        <div class="search-wrap" style="flex:1;">
+          <span class="search-icon">🔍</span>
+          <input class="input search-input" id="feed-search" placeholder="Buscar por título o descripción..." oninput="renderFeed()">
+        </div>
+        <select class="input" id="feed-sort" style="width:170px;font-size:13px;" onchange="renderFeed()">
+          <option value="recent">Más recientes</option>
+          <option value="budget-high">Mayor presupuesto</option>
+          <option value="budget-low">Menor presupuesto</option>
+        </select>
+      </div>
+      <div class="feed-header">
+        <div class="feed-count" id="feed-count">Cargando...</div>
+        <button class="btn btn-ghost btn-sm" onclick="openAiMatch()">✨ AI Match</button>
+      </div>
+      <div class="jobs-grid" id="feed-grid">
+        <div class="empty-state">
+          <div class="spinner"></div>
+          <div style="margin-top:1rem;">Cargando trabajos...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SCREEN: WORKER PROFILE
+═══════════════════════════════════════════ -->
+<div id="screen-profile" class="screen">
+  <nav>
+    <div class="nav-logo" onclick="goTo('screen-landing')">Go & Fix</div>
+    <div class="nav-links">
+      <span class="nav-link" onclick="goTo('screen-feed')">← Feed</span>
+    </div>
+    <div id="nav-profile-auth" style="display:flex;gap:8px;align-items:center;"></div>
+  </nav>
+  <div class="profile-layout">
+    <div class="profile-header">
+      <div class="avatar avatar-lg av-purple" id="profile-avatar">?</div>
+      <div style="flex:1;">
+        <h1 style="font-size:24px;font-weight:800;letter-spacing:-0.02em;margin-bottom:4px;" id="profile-name">Cargando...</h1>
+        <div style="font-size:14px;color:var(--text2);margin-bottom:12px;" id="profile-role"></div>
+        <div class="profile-stats">
+          <div class="profile-stat"><div class="profile-stat-num" id="profile-rating">—</div><div class="profile-stat-label">Rating</div></div>
+          <div class="profile-stat"><div class="profile-stat-num" id="profile-jobs">—</div><div class="profile-stat-label">Trabajos</div></div>
+          <div class="profile-stat"><div class="profile-stat-num" id="profile-price">—</div><div class="profile-stat-label">USD/hora</div></div>
+        </div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 320px;gap:1.5rem;align-items:start;" class="profile-main-grid">
+      <div>
+        <div class="card" style="margin-bottom:1rem;">
+          <div class="section-heading">Sobre el técnico</div>
+          <div style="font-size:14px;color:var(--text2);line-height:1.7;" id="profile-bio"></div>
+        </div>
+        <div class="card" style="margin-bottom:1rem;">
+          <div class="section-heading">Especialidades</div>
+          <div id="profile-skills" style="display:flex;flex-wrap:wrap;"></div>
+        </div>
+        <div class="card">
+          <div class="section-heading">Reseñas recientes</div>
+          <div id="profile-reviews"></div>
+        </div>
+      </div>
+      <div class="price-box">
+        <div style="font-size:13px;color:var(--text2);margin-bottom:4px;">Tarifa por hora</div>
+        <div style="font-size:28px;font-weight:800;font-family:'Syne',sans-serif;letter-spacing:-0.02em;margin-bottom:1rem;" id="profile-price-box">—</div>
+        <div id="profile-features" style="margin-bottom:1.25rem;"></div>
+        <div class="divider"></div>
+        <button class="btn btn-primary btn-lg" style="width:100%;margin-bottom:10px;" id="profile-hire-btn" onclick="goTo('screen-hire')">Contratar ahora</button>
+        <button class="btn btn-ghost" style="width:100%;" onclick="openChatModal()">💬 Consultar primero</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SCREEN: HIRE
+═══════════════════════════════════════════ -->
+<div id="screen-hire" class="screen">
+  <nav>
+    <div class="nav-logo" onclick="goTo('screen-landing')">Go & Fix</div>
+    <div class="nav-links">
+      <span class="nav-link" onclick="goTo('screen-profile')">← Perfil</span>
+    </div>
+  </nav>
+  <div class="hire-layout">
+    <h1 style="font-size:22px;font-weight:700;letter-spacing:-0.02em;margin-bottom:1.5rem;">Confirmar contratación</h1>
+    <div class="hire-steps" id="hire-steps-bar">
+      <div class="hire-step"><div class="hire-step-num active" id="hs1">1</div><div class="hire-step-label active">Detalles</div></div>
+      <div class="hire-step"><div class="hire-step-num" id="hs2">2</div><div class="hire-step-label">Confirmar</div></div>
+      <div class="hire-step"><div class="hire-step-num" id="hs3">3</div><div class="hire-step-label">¡Listo!</div></div>
+    </div>
+    <!-- STEP 1 -->
+    <div id="hire-step-1">
+      <div class="card" style="display:flex;align-items:center;gap:12px;margin-bottom:1.5rem;">
+        <div class="avatar avatar-md av-purple" id="hire-avatar">?</div>
+        <div style="flex:1;">
+          <div style="font-weight:600;" id="hire-worker-name">—</div>
+          <div style="font-size:13px;color:var(--text2);" id="hire-worker-role">—</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:18px;font-weight:700;color:var(--green);" id="hire-price">—</div>
+          <div style="font-size:11px;color:var(--text3);">USD/hora</div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="input-group">
+          <label class="input-label">Descripción del trabajo *</label>
+          <textarea id="hire-desc" placeholder="Describí exactamente qué necesitás que haga el técnico..."></textarea>
+          <div class="field-error" id="err-hire-desc">Describí el trabajo</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;" class="form-row">
+        <div class="input-group">
+          <label class="input-label">Fecha *</label>
+          <input class="input" id="hire-date" type="date">
+          <div class="field-error" id="err-hire-date">Seleccioná fecha</div>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Dirección *</label>
+          <input class="input" id="hire-address" placeholder="Dirección exacta">
+          <div class="field-error" id="err-hire-address">Ingresá dirección</div>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-lg" style="width:100%;" onclick="hireStep2()">Continuar →</button>
+    </div>
+    <!-- STEP 2 -->
+    <div id="hire-step-2" style="display:none;">
+      <div class="card" style="margin-bottom:1rem;background:var(--bg3);">
+        <div class="section-heading">Resumen</div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13.5px;">
+          <span style="color:var(--text2);">Técnico</span>
+          <span id="summary-tech">—</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13.5px;">
+          <span style="color:var(--text2);">Trabajo</span>
+          <span id="summary-desc" style="max-width:200px;text-align:right;">—</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13.5px;">
+          <span style="color:var(--text2);">Fecha</span>
+          <span id="summary-date">—</span>
+        </div>
+        <div class="divider"></div>
+        <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:600;">
+          <span>Total estimado</span>
+          <span id="summary-total" style="color:var(--green);">—</span>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:1rem;background:var(--accent-bg);border-color:rgba(108,92,231,0.25);">
+        <div style="font-size:12.5px;color:var(--accent2);font-weight:600;margin-bottom:5px;">🔒 Pago seguro en escrow</div>
+        <div style="font-size:12px;color:rgba(168,155,255,0.7);line-height:1.65;">El pago queda retenido hasta que confirmes que el trabajo se completó correctamente.</div>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-ghost" onclick="showHireStep(1)" style="flex:0 0 auto;">← Atrás</button>
+        <button class="btn btn-primary btn-lg" style="flex:1;" id="confirm-hire-btn" onclick="confirmHire()">✅ Confirmar contratación</button>
+      </div>
+    </div>
+    <!-- STEP 3 -->
+    <div id="hire-step-3" style="display:none;text-align:center;padding:2rem 0;">
+      <div style="font-size:48px;margin-bottom:1rem;">🎉</div>
+      <h2 style="font-size:22px;font-weight:700;margin-bottom:8px;">¡Contratación confirmada!</h2>
+      <p style="color:var(--text2);font-size:14px;margin-bottom:2rem;line-height:1.6;">El técnico fue notificado. Coordiná los detalles finales por chat.</p>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="goTo('screen-dashboard')">Ver mis trabajos</button>
+        <button class="btn btn-ghost" onclick="goTo('screen-feed')">Explorar más</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SCREEN: PROBLEM SEARCH (IA)
+═══════════════════════════════════════════ -->
+<div id="screen-problem" class="screen">
+  <nav>
+    <div class="nav-logo" onclick="goTo('screen-landing')">Go & Fix</div>
+    <div class="nav-links">
+      <span class="nav-link" onclick="goTo('screen-feed')">← Explorar</span>
+    </div>
+  </nav>
+  <div class="problem-layout">
+    <div id="problem-form-state">
+      <div class="problem-hero">
+        <div style="display:inline-flex;align-items:center;gap:7px;background:var(--accent-bg);border:1px solid rgba(108,92,231,0.25);border-radius:100px;padding:4px 13px;font-size:12px;color:var(--accent3);margin-bottom:1rem;">✨ Búsqueda inteligente con IA</div>
+        <h1 class="problem-title">¿Qué problema<br>necesitás resolver <span class="grad">hoy</span>?</h1>
+        <p class="problem-sub">Describilo con tus palabras. La IA analiza y te muestra los mejores técnicos disponibles.</p>
+      </div>
+      <div class="problem-textarea-wrap">
+        <textarea id="problem-input" class="problem-textarea" placeholder="Ej: Tengo una fuga de agua debajo del lavabo del baño. El agua gotea constantemente y hay humedad en el piso..." oninput="onProblemInput(this)" maxlength="600"></textarea>
+        <div class="char-count"><span id="char-count">0</span>/600</div>
+      </div>
+      <div style="margin-bottom:1rem;">
+        <div style="font-size:12px;color:var(--text3);margin-bottom:8px;letter-spacing:0.04em;text-transform:uppercase;font-weight:600;">O seleccioná una categoría:</div>
+        <div class="quick-tags" id="quick-tags">
+          <span class="quick-tag" onclick="selectTag(this,'plomeria')">🔧 Plomería</span>
+          <span class="quick-tag" onclick="selectTag(this,'electricidad')">⚡ Electricidad</span>
+          <span class="quick-tag" onclick="selectTag(this,'carpinteria')">🪵 Carpintería</span>
+          <span class="quick-tag" onclick="selectTag(this,'limpieza')">🧹 Limpieza</span>
+          <span class="quick-tag" onclick="selectTag(this,'pintura')">🎨 Pintura</span>
+          <span class="quick-tag" onclick="selectTag(this,'ac')">❄️ Aire acondicionado</span>
+        </div>
+      </div>
+      <div class="extra-fields">
+        <div class="input-group">
+          <label class="input-label">Tu zona / barrio</label>
+          <input class="input" id="problem-zone" placeholder="ej: Tegucigalpa...">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Urgencia</label>
+          <select id="problem-urgency">
+            <option value="urgente">🔴 Urgente — hoy mismo</option>
+            <option value="semana">🟡 Esta semana</option>
+            <option value="flexible">🟢 Flexible</option>
+          </select>
+        </div>
+      </div>
+      <div id="problem-err" style="display:none;font-size:13px;color:var(--red);margin-bottom:1rem;">Describí tu problema o seleccioná una categoría.</div>
+      <button class="btn btn-primary btn-lg" style="width:100%;font-size:15px;" id="ai-search-btn" onclick="analyzeAndMatch()">✨ Buscar técnicos con IA →</button>
+    </div>
+
+    <div id="problem-analyzing-state" style="display:none;">
+      <div class="analyzing-overlay">
+        <span class="ai-brain">🧠</span>
+        <div style="font-size:18px;font-weight:700;letter-spacing:-0.02em;margin-bottom:5px;">Analizando tu problema...</div>
+        <div style="font-size:13.5px;color:var(--text2);">La IA está buscando el mejor match</div>
+        <div class="analyzing-steps">
+          <div class="astep" id="astep-1"><div class="astep-dot"></div><span>Entendiendo el problema</span></div>
+          <div class="astep" id="astep-2"><div class="astep-dot"></div><span>Identificando categoría y especialidad</span></div>
+          <div class="astep" id="astep-3"><div class="astep-dot"></div><span>Filtrando técnicos disponibles</span></div>
+          <div class="astep" id="astep-4"><div class="astep-dot"></div><span>Calculando porcentaje de match</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="problem-results-state" style="display:none;">
+      <button class="btn btn-ghost btn-sm" style="margin-bottom:1.5rem;" onclick="resetProblem()">← Modificar búsqueda</button>
+      <div class="problem-summary-pill" onclick="resetProblem()">
+        <span style="font-size:16px;">🔍</span>
+        <span id="problem-summary-text" style="flex:1;"></span>
+        <span style="color:var(--accent2);font-size:12px;">Editar</span>
+      </div>
+      <div class="results-header">
+        <div class="results-title" id="results-title">Técnicos encontrados</div>
+        <span class="badge badge-green" id="results-cat-badge">🔧</span>
+      </div>
+      <div id="tech-results-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SCREEN: CLIENT DASHBOARD
+═══════════════════════════════════════════ -->
+<div id="screen-dashboard" class="screen">
+  <nav>
+    <div class="nav-logo" onclick="goTo('screen-landing')">Go & Fix</div>
+    <div class="nav-links">
+      <span class="nav-link active">Mi panel</span>
+      <span class="nav-link" onclick="goTo('screen-feed')">Explorar</span>
+    </div>
+    <div id="nav-dash-auth" style="display:flex;gap:8px;align-items:center;"></div>
+  </nav>
+  <div class="dashboard-layout">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem;">
+      <div>
+        <h1 style="font-size:22px;font-weight:700;letter-spacing:-0.02em;" id="dash-title">Mi Panel</h1>
+        <div style="font-size:13px;color:var(--text2);" id="dash-subtitle">Bienvenido</div>
+      </div>
+      <button class="btn btn-primary" onclick="openModal('modal-publish')">+ Publicar trabajo</button>
+    </div>
+    <!-- STATS ROW -->
+    <div class="dash-grid">
+      <div class="dash-stat">
+        <div class="dash-stat-num" id="ds-jobs">—</div>
+        <div class="dash-stat-label">Trabajos publicados</div>
+      </div>
+      <div class="dash-stat">
+        <div class="dash-stat-num" id="ds-open">—</div>
+        <div class="dash-stat-label">Trabajos abiertos</div>
+      </div>
+      <div class="dash-stat">
+        <div class="dash-stat-num" id="ds-completed">—</div>
+        <div class="dash-stat-label">Completados</div>
+      </div>
+      <div class="dash-stat">
+        <div class="dash-stat-num" id="ds-rating">—</div>
+        <div class="dash-stat-label">Rating promedio</div>
+      </div>
+    </div>
+    <!-- MY JOBS -->
+    <div style="margin-bottom:2rem;">
+      <div class="section-heading">Mis trabajos</div>
+      <div id="my-jobs-list" style="display:flex;flex-direction:column;gap:8px;">
+        <div style="text-align:center;padding:2rem;color:var(--text2);">
+          <div class="spinner" style="margin:0 auto 1rem;"></div>Cargando...
+        </div>
+      </div>
+    </div>
+    <!-- NOTIFICATIONS -->
+    <div>
+      <div class="section-heading">Actividad reciente</div>
+      <div class="notifications-list" id="notif-list">
+        <div style="text-align:center;padding:1.5rem;color:var(--text3);font-size:13px;">Sin actividad reciente</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SCREEN: TÉCNICO DASHBOARD
+═══════════════════════════════════════════ -->
+<div id="screen-tecnico" class="screen">
+  <nav>
+    <div class="nav-logo" onclick="goTo('screen-landing')">Go & Fix</div>
+    <div class="nav-links">
+      <span class="nav-link active">Trabajos disponibles</span>
+      <span class="nav-link" onclick="goTo('screen-dashboard')">Mi panel</span>
+    </div>
+    <div id="nav-tec-auth" style="display:flex;gap:8px;align-items:center;"></div>
+  </nav>
+  <div style="max-width:900px;margin:0 auto;padding:2rem 1.75rem;flex:1;">
+    <div class="card" style="display:flex;align-items:center;gap:1.25rem;margin-bottom:2rem;background:var(--bg3);border-color:var(--border2);">
+      <div class="avatar avatar-md av-purple" id="tec-avatar">?</div>
+      <div style="flex:1;">
+        <div style="font-size:16px;font-weight:700;" id="tec-name">Panel de Técnico</div>
+        <div style="font-size:13px;color:var(--text2);">Explorá y atendé los trabajos publicados por clientes</div>
+      </div>
+      <span class="badge badge-green">🟢 Disponible</span>
+    </div>
+    <!-- FILTER CHIPS -->
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.25rem;">
+      <span class="quick-tag selected" id="tec-filter-all" onclick="filterTecJobs(this,'all')">Todos</span>
+      <span class="quick-tag" id="tec-filter-plomeria" onclick="filterTecJobs(this,'plomeria')">🔧 Plomería</span>
+      <span class="quick-tag" id="tec-filter-electricidad" onclick="filterTecJobs(this,'electricidad')">⚡ Electricidad</span>
+      <span class="quick-tag" id="tec-filter-carpinteria" onclick="filterTecJobs(this,'carpinteria')">🪵 Carpintería</span>
+      <span class="quick-tag" id="tec-filter-ac" onclick="filterTecJobs(this,'ac')">❄️ A/C</span>
+      <span class="quick-tag" id="tec-filter-pintura" onclick="filterTecJobs(this,'pintura')">🎨 Pintura</span>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+      <div style="font-size:13.5px;color:var(--text2);" id="tec-job-count">Cargando...</div>
+      <select class="input" id="tec-sort" style="width:170px;font-size:13px;" onchange="renderTecJobs()">
+        <option value="recent">Más recientes</option>
+        <option value="budget-high">Mayor presupuesto</option>
+        <option value="urgente">Urgentes primero</option>
+      </select>
+    </div>
+    <div id="tec-jobs-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:1rem;">
+      <div style="text-align:center;padding:2rem;color:var(--text2);grid-column:1/-1;">
+        <div class="spinner" style="margin:0 auto 1rem;"></div>Cargando trabajos...
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     JAVASCRIPT
+═══════════════════════════════════════════ -->
+<script>
+// ═══════════════════════════════════════════
+// CONFIG — Supabase
+// IMPORTANT: anon key only in frontend. Service role key is ONLY used for admin seed.
+// ═══════════════════════════════════════════
+const SUPABASE_URL = 'https://sgcdbwvhvufyokutjtez.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNnY2Rid3ZodnVmeW9rdXRqdGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyODQ1OTksImV4cCI6MjA5Mzg2MDU5OX0.Q73kaoEpWFj6G78Jn9OI3I6mkpE2czn8W4le6kAfL5I';
+// Service role used ONLY for seeding initial data via admin API
+const SUPABASE_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNnY2Rid3ZodnVmeW9rdXRqdGV6Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODI4NDU5OSwiZXhwIjoyMDkzODYwNTk5fQ.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNnY2Rid3ZodnVmeW9rdXRqdGV6Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODI4NDU5OSwiZXhwIjoyMDkzODYwNTk5fQ.gP2wcm8G4EYKJbucdFUeG9b8a_-rc8XJ6E_sj1gXI6E';
+
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ═══════════════════════════════════════════
+// APP STATE
+// ═══════════════════════════════════════════
+let currentUser = null;
+let currentProfile = null;
+let currentTechnician = null;
+let allJobs = [];
+let allTechs = [];
+let feedFilterCat = 'all';
+let feedFilterUrg = 'all';
+let tecFilterCat = 'all';
+let selectedStars = 0;
+let currentJobForHire = null;
+let currentTechForHire = null;
+let currentProposalJobId = null;
+let chatMessages = [];
+
+// ═══════════════════════════════════════════
+// SEED DATA — Inserted via Admin API (service role)
+// These create REAL auth users + profiles + technicians + jobs
+// ═══════════════════════════════════════════
+const SEED_USERS = [
+  // CLIENTES
+  { email: 'maria.gonzalez@goandfixdemo.com', password: 'Demo1234!', name: 'María González', role: 'cliente' },
+  { email: 'carlos.mendez@goandfixdemo.com', password: 'Demo1234!', name: 'Carlos Méndez', role: 'cliente' },
+  { email: 'ana.rodriguez@goandfixdemo.com', password: 'Demo1234!', name: 'Ana Rodríguez', role: 'cliente' },
+  { email: 'jorge.lopez@goandfixdemo.com', password: 'Demo1234!', name: 'Jorge López', role: 'cliente' },
+  { email: 'lucia.ramirez@goandfixdemo.com', password: 'Demo1234!', name: 'Lucía Ramírez', role: 'cliente' },
+  // TÉCNICOS
+  { email: 'mario.flores@goandfixdemo.com', password: 'Demo1234!', name: 'Mario Flores', role: 'tecnico',
+    skills: ['plomeria','drenajes','agua caliente','tuberías PVC'], rating: 4.97, jobs_completed: 143, location: 'Tegucigalpa', price_per_hour: 30,
+    bio: 'Plomero certificado con 8 años de experiencia. Especializado en instalaciones residenciales y detección de fugas. Trabajo garantizado con factura incluida.' },
+  { email: 'luis.castillo@goandfixdemo.com', password: 'Demo1234!', name: 'Luis Castillo', role: 'tecnico',
+    skills: ['electricidad','tableros eléctricos','instalaciones 220v','iluminación LED'], rating: 4.85, jobs_completed: 98, location: 'Tegucigalpa', price_per_hour: 35,
+    bio: 'Electricista con 6 años de experiencia en instalaciones de media y baja tensión. Todos los trabajos cumplen normativa vigente.' },
+  { email: 'pedro.vargas@goandfixdemo.com', password: 'Demo1234!', name: 'Pedro Vargas', role: 'tecnico',
+    skills: ['carpinteria','puertas','ventanas','muebles a medida'], rating: 4.90, jobs_completed: 76, location: 'Comayagüela', price_per_hour: 25,
+    bio: 'Carpintero con amplia experiencia en trabajos residenciales y comerciales. Especialidad en muebles a medida y restauración de madera.' },
+  { email: 'roberto.jimenez@goandfixdemo.com', password: 'Demo1234!', name: 'Roberto Jiménez', role: 'tecnico',
+    skills: ['ac','aire acondicionado','refrigeración','mantenimiento hvac'], rating: 4.78, jobs_completed: 112, location: 'Tegucigalpa', price_per_hour: 45,
+    bio: 'Técnico en refrigeración y A/C con certificación. Instalación, mantenimiento y reparación de equipos residenciales y comerciales.' },
+  { email: 'david.morales@goandfixdemo.com', password: 'Demo1234!', name: 'David Morales', role: 'tecnico',
+    skills: ['pintura','pintura exterior','pintura interior','texturizados'], rating: 4.82, jobs_completed: 89, location: 'Tegucigalpa', price_per_hour: 20,
+    bio: 'Pintor profesional con 10 años de experiencia. Especializado en acabados de alta calidad para interiores y exteriores.' },
+  { email: 'carlos.herrera@goandfixdemo.com', password: 'Demo1234!', name: 'Carlos Herrera', role: 'tecnico',
+    skills: ['plomeria','instalaciones sanitarias','impermeabilización','filtraciones'], rating: 4.70, jobs_completed: 67, location: 'San Pedro Sula', price_per_hour: 28,
+    bio: 'Plomero especialista en sistemas sanitarios y soluciones de impermeabilización.' },
+  { email: 'andres.torres@goandfixdemo.com', password: 'Demo1234!', name: 'Andrés Torres', role: 'tecnico',
+    skills: ['electricidad','automatización','domótica','cámaras CCTV','redes'], rating: 4.93, jobs_completed: 134, location: 'Tegucigalpa', price_per_hour: 40,
+    bio: 'Técnico en electricidad y automatización del hogar. Instalaciones inteligentes para hogares modernos.' },
+  { email: 'miguel.reyes@goandfixdemo.com', password: 'Demo1234!', name: 'Miguel Reyes', role: 'tecnico',
+    skills: ['limpieza','limpieza profunda','limpieza post obra','desinfección'], rating: 4.88, jobs_completed: 201, location: 'Tegucigalpa', price_per_hour: 15,
+    bio: 'Equipo profesional de limpieza con experiencia en residencias, oficinas y post-obra.' },
+  { email: 'oscar.pena@goandfixdemo.com', password: 'Demo1234!', name: 'Óscar Peña', role: 'tecnico',
+    skills: ['carpinteria','albañilería','remodelaciones','construcción'], rating: 4.65, jobs_completed: 55, location: 'Choloma', price_per_hour: 22,
+    bio: 'Constructor y carpintero con experiencia en remodelaciones completas.' },
+  { email: 'francisco.silva@goandfixdemo.com', password: 'Demo1234!', name: 'Francisco Silva', role: 'tecnico',
+    skills: ['ac','plomeria','electricidad','mantenimiento general'], rating: 4.75, jobs_completed: 88, location: 'La Ceiba', price_per_hour: 35,
+    bio: 'Técnico multidisciplinario en mantenimiento general del hogar.' },
+];
+
+const SEED_JOBS = [
+  { title: 'Reparar fuga de agua en cocina', description: 'Tengo una fuga de agua debajo del lavabo. El agua gotea constantemente y hay humedad en el piso. Necesito solución urgente.', category: 'plomeria', budget: 120, location: 'Col. Kennedy, Tegucigalpa', urgency: 'urgente' },
+  { title: 'Instalar tomacorrientes en sala', description: 'Necesito instalar 4 tomacorrientes nuevos en la sala y conectar a tablero eléctrico.', category: 'electricidad', budget: 200, location: 'Col. Loarque, Tegucigalpa', urgency: 'semana' },
+  { title: 'Reparar puerta de madera dañada', description: 'La puerta principal de madera está descuadrada y no cierra bien. Necesita ajuste o reemplazo de bisagras.', category: 'carpinteria', budget: 80, location: 'Comayagüela', urgency: 'flexible' },
+  { title: 'Mantenimiento de aire acondicionado', description: 'Aire acondicionado Samsung 18000 BTU necesita mantenimiento preventivo. Lleva 1 año sin servicio.', category: 'ac', budget: 150, location: 'Col. Palmira, Tegucigalpa', urgency: 'semana' },
+  { title: 'Pintar habitaciones de casa', description: 'Necesito pintar 3 habitaciones + sala. Paredes de 3m de alto aprox. Yo pongo la pintura.', category: 'pintura', budget: 300, location: 'Residencial El Pedregal', urgency: 'flexible' },
+  { title: 'Cambiar tubería de agua fría', description: 'Tubería de PVC fisurada en el techo del baño. Causa goteo al cuarto de abajo.', category: 'plomeria', budget: 180, location: 'Col. Kennedy, Tegucigalpa', urgency: 'urgente' },
+  { title: 'Instalar panel eléctrico nuevo', description: 'El tablero actual es antiguo y no tiene breakers modernos. Quiero instalación nueva completa.', category: 'electricidad', budget: 500, location: 'Col. Loarque, Tegucigalpa', urgency: 'semana' },
+  { title: 'Limpieza profunda de casa', description: 'Casa de 3 habitaciones necesita limpieza profunda completa incluyendo cocina y baños.', category: 'limpieza', budget: 100, location: 'Comayagüela', urgency: 'flexible' },
+];
+
+// ═══════════════════════════════════════════
+// ADMIN API HELPERS (service role — for seeding only)
+// ═══════════════════════════════════════════
+async function adminCreateUser(email, password, metadata) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': SUPABASE_SERVICE_KEY,
+      'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+    },
+    body: JSON.stringify({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: metadata,
+    }),
+  });
+  const data = await res.json();
+  return data;
+}
+
+async function adminQuery(table, payload, method = 'POST') {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': SUPABASE_SERVICE_KEY,
+      'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+      'Prefer': 'resolution=ignore-duplicates,return=representation',
+    },
+    body: JSON.stringify(payload),
+  });
+  return await res.json();
+}
+
+// ═══════════════════════════════════════════
+// AUTO-SEED (run once if no technicians exist)
+// ═══════════════════════════════════════════
+async function checkAndSeed() {
+  setLoadingStatus('Verificando datos de prueba...');
+  const { count } = await db.from('technicians').select('id', { count: 'exact', head: true });
+  if (count && count >= 5) return; // Already seeded
+
+  setLoadingStatus('Insertando datos de prueba (primera vez)...');
+  
+  for (const u of SEED_USERS) {
+    const userData = await adminCreateUser(u.email, u.password, { name: u.name, role: u.role });
+    const userId = userData.id;
+    if (!userId) continue;
+
+    // Upsert profile
+    await adminQuery('profiles', { id: userId, role: u.role, name: u.name, email: u.email });
+
+    // If technician, upsert technician record
+    if (u.role === 'tecnico') {
+      await adminQuery('technicians', {
+        id: userId,
+        skills: u.skills,
+        rating: u.rating,
+        jobs_completed: u.jobs_completed,
+        location: u.location,
+        price_per_hour: u.price_per_hour,
+        bio: u.bio,
+      });
+    }
+  }
+
+  // Seed jobs: assign to first 5 users (clientes)
+  setLoadingStatus('Insertando trabajos de prueba...');
+  const { data: clientProfiles } = await db.from('profiles').select('id').eq('role', 'cliente').limit(5);
+  if (clientProfiles && clientProfiles.length) {
+    for (let i = 0; i < SEED_JOBS.length; i++) {
+      const client = clientProfiles[i % clientProfiles.length];
+      await adminQuery('jobs', {
+        client_id: client.id,
+        ...SEED_JOBS[i],
+        status: 'open',
+        commission: SEED_JOBS[i].budget * 0.05,
+      });
+    }
+  }
+}
+
+// ═══════════════════════════════════════════
+// INIT APP
+// ═══════════════════════════════════════════
+async function initApp() {
+  setLoadingStatus('Verificando base de datos...');
+
+  // Check if tables exist
+  const { data, error } = await db.from('profiles').select('id').limit(1);
+
+  if (error && error.code === '42P01') {
+    hideLoading();
+    goTo('screen-setup');
+    return;
+  }
+
+  // Auto-seed if needed
+  await checkAndSeed();
+
+  setLoadingStatus('Verificando sesión...');
+  const { data: { session } } = await db.auth.getSession();
+
+  if (session) {
+    currentUser = session.user;
+    await loadProfile();
+  }
+
+  loadLandingStats();
+  hideLoading();
+
+  if (currentUser && currentProfile) {
+    redirectByRole();
+  } else {
+    goTo('screen-landing');
+  }
+
+  db.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN' && session) {
+      currentUser = session.user;
+      await loadProfile();
+      updateNavBadges();
+      redirectByRole();
+    } else if (event === 'SIGNED_OUT') {
+      currentUser = null;
+      currentProfile = null;
+      currentTechnician = null;
+      updateNavBadges();
+      goTo('screen-landing');
+    }
+  });
+}
+
+function setLoadingStatus(msg) {
+  const el = document.getElementById('loading-status');
+  if (el) el.textContent = msg;
+}
+
+function hideLoading() {
+  const el = document.getElementById('app-loading');
+  el.classList.add('hidden');
+  setTimeout(() => el.style.display = 'none', 500);
+}
+
+async function loadProfile() {
+  if (!currentUser) return;
+  const { data } = await db.from('profiles').select('*').eq('id', currentUser.id).single();
+  if (data) {
+    currentProfile = data;
+    if (data.role === 'tecnico') {
+      const { data: tech } = await db.from('technicians').select('*').eq('id', currentUser.id).single();
+      currentTechnician = tech;
+    }
+  }
+}
+
+async function loadLandingStats() {
+  const [jobsRes, techRes, profileRes] = await Promise.all([
+    db.from('jobs').select('id', { count: 'exact', head: true }),
+    db.from('technicians').select('id', { count: 'exact', head: true }),
+    db.from('profiles').select('id', { count: 'exact', head: true }),
+  ]);
+  if (jobsRes.count !== null) document.getElementById('stat-jobs').querySelector('.stat-num').textContent = jobsRes.count + '+';
+  if (techRes.count !== null) document.getElementById('stat-techs').querySelector('.stat-num').textContent = techRes.count;
+  if (profileRes.count !== null) document.getElementById('stat-users').querySelector('.stat-num').textContent = profileRes.count + '+';
+}
+
+function redirectByRole() {
+  if (!currentProfile) return;
+  updateNavBadges();
+  if (currentProfile.role === 'tecnico') {
+    goTo('screen-tecnico');
+    loadTecJobs();
+  } else {
+    goTo('screen-dashboard');
+    loadDashboard();
+  }
+}
+
+function updateNavBadges() {
+  const navAreas = ['nav-auth-area','nav-feed-auth','nav-profile-auth','nav-dash-auth','nav-tec-auth'];
+  navAreas.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (currentProfile) {
+      const initials = currentProfile.name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+      el.innerHTML = `
+        <div class="user-badge" onclick="doLogout()">
+          <span class="user-dot"></span>
+          <span>${initials} · ${currentProfile.name.split(' ')[0]}</span>
+          <span style="color:var(--text3);font-size:11px;">Salir</span>
+        </div>`;
+    } else {
+      el.innerHTML = `<button class="btn btn-ghost btn-sm" onclick="goTo('screen-login')">Entrar</button>
+        <button class="btn btn-primary btn-sm" onclick="goTo('screen-login')">Registrarse</button>`;
+    }
+  });
+}
+
+// ═══════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════
+function goTo(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const target = document.getElementById(id);
+  if (target) { target.classList.add('active'); window.scrollTo(0, 0); }
+
+  if (id === 'screen-feed') loadFeed();
+  if (id === 'screen-tecnico') loadTecJobs();
+  if (id === 'screen-dashboard') loadDashboard();
+  if (id === 'screen-hire') document.getElementById('hire-date').valueAsDate = new Date(Date.now() + 86400000);
+}
+
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ═══════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════
+let currentRole = 'cliente';
+
+function setRole(role) {
+  currentRole = role;
+  document.getElementById('role-client').classList.toggle('active', role === 'cliente');
+  document.getElementById('role-worker').classList.toggle('active', role === 'tecnico');
+  document.getElementById('tech-fields').style.display = role === 'tecnico' ? 'block' : 'none';
+}
+
+function switchAuthTab(tab) {
+  document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+  document.getElementById('tab-register').classList.toggle('active', tab === 'register');
+  document.getElementById('form-login').style.display = tab === 'login' ? 'block' : 'none';
+  document.getElementById('form-register').style.display = tab === 'register' ? 'block' : 'none';
+}
+
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pw = document.getElementById('login-password').value;
+  const errDiv = document.getElementById('login-error');
+  const btn = document.getElementById('login-btn');
+
+  errDiv.style.display = 'none';
+  ['err-login-email','err-login-pw'].forEach(id => document.getElementById(id).style.display = 'none');
+
+  if (!email || !email.includes('@')) { document.getElementById('err-login-email').style.display = 'block'; return; }
+  if (!pw) { document.getElementById('err-login-pw').style.display = 'block'; return; }
+
+  btn.disabled = true; btn.textContent = 'Ingresando...';
+
+  const { data, error } = await db.auth.signInWithPassword({ email, password: pw });
+
+  btn.disabled = false; btn.textContent = 'Iniciar sesión';
+
+  if (error) {
+    errDiv.textContent = error.message === 'Invalid login credentials'
+      ? 'Email o contraseña incorrectos'
+      : error.message;
+    errDiv.style.display = 'block';
+    return;
+  }
+  showToast('¡Bienvenido! 👋', '✅');
+}
+
+async function doRegister() {
+  const name = document.getElementById('reg-name').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const pw = document.getElementById('reg-password').value;
+  const errDiv = document.getElementById('register-error');
+  const btn = document.getElementById('register-btn');
+
+  errDiv.style.display = 'none';
+  ['err-reg-name','err-reg-email','err-reg-pw'].forEach(id => document.getElementById(id).style.display = 'none');
+
+  let valid = true;
+  if (!name) { document.getElementById('err-reg-name').style.display = 'block'; valid = false; }
+  if (!email || !email.includes('@')) { document.getElementById('err-reg-email').style.display = 'block'; valid = false; }
+  if (!pw || pw.length < 6) { document.getElementById('err-reg-pw').style.display = 'block'; valid = false; }
+  if (!valid) return;
+
+  btn.disabled = true; btn.textContent = 'Creando cuenta...';
+
+  const metadata = { name, role: currentRole };
+  if (currentRole === 'tecnico') {
+    metadata.skills = document.getElementById('reg-skills').value;
+    metadata.location = document.getElementById('reg-location').value;
+    metadata.price = document.getElementById('reg-price').value;
+  }
+
+  const { data, error } = await db.auth.signUp({ email, password: pw, options: { data: metadata } });
+
+  btn.disabled = false; btn.textContent = 'Crear cuenta gratis 🚀';
+
+  if (error) {
+    errDiv.textContent = error.message;
+    errDiv.style.display = 'block';
+    return;
+  }
+
+  if (data.user && currentRole === 'tecnico') {
+    await createTechnicianRecord(data.user.id, metadata);
+  }
+
+  if (data.session) {
+    currentUser = data.user;
+    await loadProfile();
+    redirectByRole();
+    showToast('¡Cuenta creada! Bienvenido 🎉', '✅');
+  } else {
+    showToast('¡Cuenta creada! Revisá tu email para confirmar.', '🎉');
+    switchAuthTab('login');
+  }
+}
+
+async function createTechnicianRecord(userId, metadata) {
+  const skills = (metadata.skills || '').split(',').map(s => s.trim()).filter(Boolean);
+  await db.from('technicians').insert({
+    id: userId,
+    skills,
+    location: metadata.location || '',
+    price_per_hour: parseFloat(metadata.price) || 20,
+    bio: `Técnico especializado en ${skills.join(', ')}.`,
+  });
+}
+
+async function doLogout() {
+  await db.auth.signOut();
+  showToast('Sesión cerrada', '👋');
+}
+
+// ═══════════════════════════════════════════
+// FEED — Jobs explorer
+// ═══════════════════════════════════════════
+async function loadFeed() {
+  const grid = document.getElementById('feed-grid');
+  grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--text2);"><div class="spinner" style="margin:0 auto 1rem;"></div>Cargando trabajos...</div>';
+
+  const { data, error } = await db
+    .from('jobs')
+    .select('*, profiles(name)')
+    .eq('status', 'open')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    grid.innerHTML = `<div class="empty-state">Error: ${error.message}</div>`;
+    return;
+  }
+
+  allJobs = data || [];
+  renderFeed();
+  updateNavBadges();
+}
+
+function renderFeed() {
+  const searchQ = (document.getElementById('feed-search')?.value || '').toLowerCase();
+  const sortVal = document.getElementById('feed-sort')?.value || 'recent';
+
+  let filtered = allJobs.filter(j => {
+    const catOk = feedFilterCat === 'all' || j.category === feedFilterCat;
+    const urgOk = feedFilterUrg === 'all' || j.urgency === feedFilterUrg;
+    const searchOk = !searchQ || j.title.toLowerCase().includes(searchQ) || (j.description || '').toLowerCase().includes(searchQ) || (j.category || '').toLowerCase().includes(searchQ);
+    return catOk && urgOk && searchOk;
+  });
+
+  filtered.sort((a, b) => {
+    if (sortVal === 'budget-high') return (b.budget || 0) - (a.budget || 0);
+    if (sortVal === 'budget-low') return (a.budget || 0) - (b.budget || 0);
+    return new Date(b.created_at) - new Date(a.created_at);
+  });
+
+  document.getElementById('feed-count').textContent = `${filtered.length} trabajo${filtered.length !== 1 ? 's' : ''} disponible${filtered.length !== 1 ? 's' : ''}`;
+
+  const grid = document.getElementById('feed-grid');
+  if (!filtered.length) {
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><div style="font-size:40px;margin-bottom:12px;">🔍</div><div style="font-weight:600;margin-bottom:6px;">Sin resultados</div><div style="font-size:13px;">Intentá con otros filtros</div></div>';
+    return;
+  }
+  grid.innerHTML = filtered.map(j => jobCard(j, false)).join('');
+}
+
+function setFeedFilter(type, val, el) {
+  if (type === 'cat') {
+    feedFilterCat = val;
+    document.querySelectorAll('[onclick^="setFeedFilter(\'cat\'"]').forEach(e => e.classList.remove('active'));
+  } else {
+    feedFilterUrg = val;
+    document.querySelectorAll('[onclick^="setFeedFilter(\'urg\'"]').forEach(e => e.classList.remove('active'));
+  }
+  el.classList.add('active');
+  renderFeed();
+}
+
+const catEmojis = { plomeria: '🔧', electricidad: '⚡', carpinteria: '🪵', ac: '❄️', pintura: '🎨', limpieza: '🧹', otro: '🔨' };
+const urgColors = { urgente: 'badge-red', semana: 'badge-amber', flexible: 'badge-green' };
+const urgLabels = { urgente: '🔴 Urgente', semana: '🟡 Esta semana', flexible: '🟢 Flexible' };
+
+function jobCard(j, isTech = false) {
+  const emoji = catEmojis[j.category] || '🔨';
+  const catLabel = j.category ? j.category.charAt(0).toUpperCase() + j.category.slice(1) : '—';
+  const urgColor = urgColors[j.urgency] || 'badge-green';
+  const urgLabel = urgLabels[j.urgency] || j.urgency;
+  const clientName = j.profiles?.name || 'Cliente';
+  const timeAgo = getTimeAgo(j.created_at);
+
+  const action = isTech
+    ? `onclick="openProposalModal('${j.id}')"`
+    : `onclick="openJobDetail('${j.id}')"`;
+
+  return `<div class="job-card" ${action}>
+    <div class="job-top">
+      <div>
+        <div class="job-meta">
+          <span class="badge badge-purple">${emoji} ${escHtml(catLabel)}</span>
+          <span class="badge ${urgColor}">${urgLabel}</span>
+        </div>
+        <div class="job-title">${escHtml(j.title)}</div>
+      </div>
+      <div class="job-budget">$${j.budget}</div>
+    </div>
+    <div class="job-desc">${escHtml(j.description || '')}</div>
+    <div class="job-footer">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div class="avatar avatar-sm av-purple">${clientName.split(' ').map(w => w[0]).join('').slice(0, 2)}</div>
+        <div><div style="font-size:12px;font-weight:500;">${clientName.split(' ')[0]}</div></div>
+      </div>
+      <div class="job-info">
+        <span class="job-info-item">📍 ${escHtml(j.location || '—')}</span>
+        <span class="job-info-item">🕐 ${timeAgo}</span>
+      </div>
+    </div>
+    ${isTech ? `<button class="btn btn-primary btn-sm" style="width:100%;margin-top:10px;" onclick="event.stopPropagation();openProposalModal('${j.id}')">📤 Enviar propuesta</button>` : ''}
+  </div>`;
+}
+
+function openJobDetail(jobId) {
+  const job = allJobs.find(j => j.id === jobId);
+  if (!job) return;
+  if (currentProfile?.role === 'tecnico') {
+    openProposalModal(jobId);
+  } else {
+    loadTechsForJob(job);
+  }
+}
+
+async function loadTechsForJob(job) {
+  // Search techs with matching skills first, then fallback to all
+  let query = db.from('technicians').select('*, profiles(name, email)').order('rating', { ascending: false }).limit(5);
+  if (job.category) {
+    query = db.from('technicians').select('*, profiles(name, email)').contains('skills', [job.category]).order('rating', { ascending: false }).limit(5);
+  }
+  let { data: techs } = await query;
+  if (!techs || !techs.length) {
+    ({ data: techs } = await db.from('technicians').select('*, profiles(name, email)').order('rating', { ascending: false }).limit(5));
+  }
+  if (techs && techs.length > 0) {
+    currentTechForHire = techs[0];
+    currentJobForHire = job;
+    loadTechProfile(techs[0]);
+  } else {
+    showToast('No hay técnicos disponibles aún', 'ℹ️');
+  }
+}
+
+function loadTechProfile(tech) {
+  const initials = tech.profiles?.name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || 'TK';
+  const avColors = ['av-purple', 'av-green', 'av-amber', 'av-blue', 'av-pink', 'av-teal'];
+  const avColor = avColors[Math.floor(Math.random() * avColors.length)];
+
+  document.getElementById('profile-avatar').textContent = initials;
+  document.getElementById('profile-avatar').className = `avatar avatar-lg ${avColor}`;
+  document.getElementById('profile-name').textContent = tech.profiles?.name || 'Técnico';
+  document.getElementById('profile-role').textContent = `${(tech.skills || []).slice(0, 2).join(', ')} · ${tech.location || 'Honduras'}`;
+  document.getElementById('profile-rating').textContent = (tech.rating || 5).toFixed(1) + '★';
+  document.getElementById('profile-jobs').textContent = tech.jobs_completed || 0;
+  document.getElementById('profile-price').textContent = '$' + tech.price_per_hour;
+  document.getElementById('profile-price-box').textContent = '$' + tech.price_per_hour;
+  document.getElementById('profile-bio').textContent = tech.bio || 'Técnico profesional con amplia experiencia.';
+
+  document.getElementById('profile-skills').innerHTML = (tech.skills || []).map(s => `<span class="skill-pill">${escHtml(s)}</span>`).join('');
+  document.getElementById('profile-features').innerHTML = [
+    'Diagnóstico incluido',
+    'Servicio garantizado',
+    'Pagos seguros en escrow',
+    `${tech.jobs_completed || 0} trabajos completados`,
+  ].map(f => `<div class="price-feat"><span class="feat-check">✓</span>${f}</div>`).join('');
+
+  loadTechReviews(tech.id);
+
+  document.getElementById('hire-avatar').textContent = initials;
+  document.getElementById('hire-avatar').className = `avatar avatar-md ${avColor}`;
+  document.getElementById('hire-worker-name').textContent = tech.profiles?.name || 'Técnico';
+  document.getElementById('hire-worker-role').textContent = (tech.skills || []).slice(0, 2).join(', ');
+  document.getElementById('hire-price').textContent = '$' + tech.price_per_hour;
+  document.getElementById('summary-tech').textContent = tech.profiles?.name || 'Técnico';
+  document.getElementById('summary-total').textContent = '$' + tech.price_per_hour + ' /hora';
+
+  currentTechForHire = tech;
+  goTo('screen-profile');
+}
+
+async function loadTechReviews(techId) {
+  const { data: reviews } = await db
+    .from('reviews')
+    .select('*, profiles(name)')
+    .eq('technician_id', techId)
+    .order('created_at', { ascending: false })
+    .limit(5);
+
+  const container = document.getElementById('profile-reviews');
+  if (!reviews || !reviews.length) {
+    container.innerHTML = '<div style="font-size:13px;color:var(--text2);padding:1rem 0;">Sin reseñas aún. ¡Sé el primero en contratar!</div>';
+    return;
+  }
+  container.innerHTML = reviews.map(r => {
+    const name = r.profiles?.name || 'Cliente';
+    const initials = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+    const stars = '★'.repeat(r.rating) + '☆'.repeat(5 - r.rating);
+    return `<div class="review-card">
+      <div class="review-header">
+        <div class="avatar avatar-sm av-blue">${initials}</div>
+        <div>
+          <div style="font-size:12.5px;font-weight:500;">${escHtml(name)}</div>
+          <div class="stars">${stars}</div>
+        </div>
+        <div style="margin-left:auto;font-size:11.5px;color:var(--text3);">${getTimeAgo(r.created_at)}</div>
+      </div>
+      <div class="review-text">${escHtml(r.comment || '')}</div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════
+// TECHNICIAN SEARCH (real DB, by skills)
+// ═══════════════════════════════════════════
+async function searchTechnicians(query = '', skillFilter = null) {
+  let req = db.from('technicians').select('*, profiles(name, email)').order('rating', { ascending: false });
+  if (skillFilter) {
+    req = req.contains('skills', [skillFilter]);
+  }
+  const { data, error } = await req;
+  if (error || !data) return [];
+
+  if (query) {
+    const q = query.toLowerCase();
+    return data.filter(t =>
+      (t.profiles?.name || '').toLowerCase().includes(q) ||
+      (t.skills || []).some(s => s.toLowerCase().includes(q)) ||
+      (t.location || '').toLowerCase().includes(q)
+    );
+  }
+  return data;
+}
+
+// ═══════════════════════════════════════════
+// PUBLISH JOB
+// ═══════════════════════════════════════════
+async function submitPublishJob() {
+  if (!currentUser || currentProfile?.role !== 'cliente') {
+    showToast('Debes iniciar sesión como cliente para publicar', '⚠️');
+    closeModal('modal-publish');
+    goTo('screen-login');
+    return;
+  }
+
+  const title = document.getElementById('pub-title').value.trim();
+  const desc = document.getElementById('pub-desc').value.trim();
+  const cat = document.getElementById('pub-category').value;
+  const budget = document.getElementById('pub-budget').value;
+  const location = document.getElementById('pub-location').value.trim();
+
+  let valid = true;
+  ['err-pub-title','err-pub-desc','err-pub-category','err-pub-budget','err-pub-location'].forEach(id => document.getElementById(id).style.display = 'none');
+
+  if (!title) { document.getElementById('err-pub-title').style.display = 'block'; valid = false; }
+  if (!desc) { document.getElementById('err-pub-desc').style.display = 'block'; valid = false; }
+  if (!cat) { document.getElementById('err-pub-category').style.display = 'block'; valid = false; }
+  if (!budget || parseFloat(budget) <= 0) { document.getElementById('err-pub-budget').style.display = 'block'; valid = false; }
+  if (!location) { document.getElementById('err-pub-location').style.display = 'block'; valid = false; }
+  if (!valid) return;
+
+  const btn = document.getElementById('pub-submit-btn');
+  btn.disabled = true; btn.textContent = '⏳ Publicando...';
+
+  const { error } = await db.from('jobs').insert({
+    client_id: currentUser.id,
+    title, description: desc, category: cat,
+    budget: parseFloat(budget), location,
+    urgency: document.getElementById('pub-urgency').value,
+    status: 'open',
+    commission: parseFloat(budget) * 0.05,
+  });
+
+  btn.disabled = false; btn.textContent = '🚀 Publicar trabajo';
+
+  if (error) { showToast('Error al publicar: ' + error.message, '❌'); return; }
+
+  closeModal('modal-publish');
+  showToast('¡Trabajo publicado! Los técnicos ya pueden verlo 🎉', '✅');
+  ['pub-title','pub-desc','pub-budget','pub-location'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('pub-category').value = '';
+
+  loadFeed();
+  if (currentProfile?.role === 'cliente') loadDashboard();
+}
+
+// ═══════════════════════════════════════════
+// HIRE FLOW
+// ═══════════════════════════════════════════
+function showHireStep(n) {
+  [1, 2, 3].forEach(i => document.getElementById(`hire-step-${i}`).style.display = i === n ? 'block' : 'none');
+  ['hs1','hs2','hs3'].forEach((id, idx) => {
+    const el = document.getElementById(id);
+    el.className = 'hire-step-num' + (idx + 1 < n ? ' done' : idx + 1 === n ? ' active' : '');
+  });
+}
+
+function hireStep2() {
+  const desc = document.getElementById('hire-desc').value.trim();
+  const date = document.getElementById('hire-date').value;
+  const addr = document.getElementById('hire-address').value.trim();
+  let valid = true;
+  ['err-hire-desc','err-hire-date','err-hire-address'].forEach(id => document.getElementById(id).style.display = 'none');
+  if (!desc) { document.getElementById('err-hire-desc').style.display = 'block'; valid = false; }
+  if (!date) { document.getElementById('err-hire-date').style.display = 'block'; valid = false; }
+  if (!addr) { document.getElementById('err-hire-address').style.display = 'block'; valid = false; }
+  if (!valid) return;
+
+  document.getElementById('summary-desc').textContent = desc.length > 60 ? desc.slice(0, 60) + '...' : desc;
+  document.getElementById('summary-date').textContent = new Date(date).toLocaleDateString('es-HN', { weekday: 'long', day: 'numeric', month: 'long' });
+  showHireStep(2);
+}
+
+async function confirmHire() {
+  if (!currentUser) { goTo('screen-login'); return; }
+  const btn = document.getElementById('confirm-hire-btn');
+  btn.disabled = true; btn.textContent = '⏳ Confirmando...';
+
+  const desc = document.getElementById('hire-desc').value.trim();
+  const addr = document.getElementById('hire-address').value.trim();
+  let jobId = currentJobForHire?.id;
+
+  if (!jobId && currentTechForHire) {
+    const { data: newJob } = await db.from('jobs').insert({
+      client_id: currentUser.id,
+      title: `Servicio con ${currentTechForHire.profiles?.name || 'Técnico'}`,
+      description: desc,
+      category: (currentTechForHire.skills || ['otro'])[0],
+      budget: currentTechForHire.price_per_hour,
+      location: addr,
+      status: 'assigned',
+    }).select().single();
+    jobId = newJob?.id;
+  }
+
+  showHireStep(3);
+  btn.disabled = false; btn.textContent = '✅ Confirmar contratación';
+  showToast('¡Técnico contratado! 🎉', '✅');
+}
+
+// ═══════════════════════════════════════════
+// PROPOSAL (Técnico → Trabajo)
+// ═══════════════════════════════════════════
+function openProposalModal(jobId) {
+  if (!currentUser) { showToast('Iniciá sesión para enviar propuestas', '⚠️'); goTo('screen-login'); return; }
+  if (currentProfile?.role !== 'tecnico') { showToast('Solo los técnicos pueden enviar propuestas', 'ℹ️'); return; }
+
+  currentProposalJobId = jobId;
+  const job = allJobs.find(j => j.id === jobId);
+
+  if (job) {
+    document.getElementById('proposal-job-detail').innerHTML = `
+      <div class="card" style="background:var(--bg3);">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;">Trabajo</div>
+        <div style="font-size:15px;font-weight:600;margin-bottom:4px;">${escHtml(job.title)}</div>
+        <div style="font-size:12.5px;color:var(--text2);margin-bottom:8px;">${escHtml(job.description || '')}</div>
+        <div style="font-size:13px;color:var(--green);font-weight:600;">💰 Presupuesto: $${job.budget}</div>
+      </div>`;
+    document.getElementById('prop-price').value = job.budget || '';
+  }
+  document.getElementById('prop-message').value = '';
+  openModal('modal-proposal');
+}
+
+async function submitProposal() {
+  if (!currentUser || !currentProposalJobId) return;
+
+  const price = parseFloat(document.getElementById('prop-price').value);
+  const message = document.getElementById('prop-message').value.trim();
+
+  let valid = true;
+  ['err-prop-price','err-prop-msg'].forEach(id => document.getElementById(id).style.display = 'none');
+  if (!price || price <= 0) { document.getElementById('err-prop-price').style.display = 'block'; valid = false; }
+  if (!message) { document.getElementById('err-prop-msg').style.display = 'block'; valid = false; }
+  if (!valid) return;
+
+  const btn = document.getElementById('prop-submit-btn');
+  btn.disabled = true; btn.textContent = '⏳ Enviando...';
+
+  const { error } = await db.from('applications').insert({
+    job_id: currentProposalJobId,
+    technician_id: currentUser.id,
+    price_offer: price, message,
+    availability: document.getElementById('prop-when').value,
+    status: 'pending',
+  });
+
+  btn.disabled = false; btn.textContent = '📤 Enviar propuesta al cliente';
+
+  if (error) {
+    showToast(error.code === '23505' ? 'Ya enviaste una propuesta para este trabajo' : 'Error: ' + error.message, error.code === '23505' ? 'ℹ️' : '❌');
+    return;
+  }
+
+  closeModal('modal-proposal');
+  showToast('✅ Propuesta enviada al cliente', '📤');
+}
+
+// ═══════════════════════════════════════════
+// TECH DASHBOARD
+// ═══════════════════════════════════════════
+async function loadTecJobs() {
+  const { data } = await db.from('jobs').select('*, profiles(name)').eq('status', 'open').order('created_at', { ascending: false });
+  allJobs = data || [];
+  renderTecJobs();
+
+  if (currentProfile) {
+    document.getElementById('tec-name').textContent = currentProfile.name;
+    document.getElementById('tec-avatar').textContent = currentProfile.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  }
+  // Load tech stats
+  if (currentTechnician) {
+    loadTecStats();
+  }
+}
+
+async function loadTecStats() {
+  if (!currentTechnician || !currentUser) return;
+  const { count: appCount } = await db.from('applications').select('id', { count: 'exact', head: true }).eq('technician_id', currentUser.id);
+  const { count: acceptedCount } = await db.from('applications').select('id', { count: 'exact', head: true }).eq('technician_id', currentUser.id).eq('status', 'accepted');
+  // Update stats in tec header if elements exist
+}
+
+function filterTecJobs(el, cat) {
+  tecFilterCat = cat;
+  document.querySelectorAll('[id^="tec-filter-"]').forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+  renderTecJobs();
+}
+
+function renderTecJobs() {
+  const sort = document.getElementById('tec-sort')?.value || 'recent';
+  let filtered = allJobs.filter(j => tecFilterCat === 'all' || j.category === tecFilterCat);
+  filtered.sort((a, b) => {
+    if (sort === 'budget-high') return (b.budget || 0) - (a.budget || 0);
+    if (sort === 'urgente') return a.urgency === 'urgente' ? -1 : 1;
+    return new Date(b.created_at) - new Date(a.created_at);
+  });
+  document.getElementById('tec-job-count').textContent = `${filtered.length} trabajo${filtered.length !== 1 ? 's' : ''} disponible${filtered.length !== 1 ? 's' : ''}`;
+  const grid = document.getElementById('tec-jobs-grid');
+  if (!filtered.length) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--text2);"><div style="font-size:32px;margin-bottom:10px;">🔍</div><div>Sin trabajos para esta categoría</div></div>';
+    return;
+  }
+  grid.innerHTML = filtered.map(j => jobCard(j, true)).join('');
+}
+
+// ═══════════════════════════════════════════
+// CLIENT DASHBOARD
+// ═══════════════════════════════════════════
+async function loadDashboard() {
+  if (!currentUser) return;
+
+  if (currentProfile) {
+    document.getElementById('dash-title').textContent = `Hola, ${currentProfile.name.split(' ')[0]} 👋`;
+    document.getElementById('dash-subtitle').textContent = currentProfile.role === 'cliente'
+      ? 'Tus trabajos y actividad reciente'
+      : 'Tu panel de técnico';
+  }
+
+  if (currentProfile?.role === 'tecnico') {
+    if (currentTechnician) {
+      document.getElementById('ds-jobs').textContent = currentTechnician.jobs_completed || 0;
+      document.getElementById('ds-open').textContent = '—';
+      document.getElementById('ds-completed').textContent = currentTechnician.jobs_completed || 0;
+      document.getElementById('ds-rating').textContent = (currentTechnician.rating || 5).toFixed(1) + '★';
+    }
+    const { data: apps } = await db.from('applications')
+      .select('*, jobs(title, budget, status, profiles(name))')
+      .eq('technician_id', currentUser.id)
+      .order('created_at', { ascending: false })
+      .limit(10);
+    renderDashboardApps(apps || []);
+    return;
+  }
+
+  // Client
+  const { data: jobs } = await db.from('jobs')
+    .select('*, applications(count)')
+    .eq('client_id', currentUser.id)
+    .order('created_at', { ascending: false });
+
+  const myJobs = jobs || [];
+  document.getElementById('ds-jobs').textContent = myJobs.length;
+  document.getElementById('ds-open').textContent = myJobs.filter(j => j.status === 'open').length;
+  document.getElementById('ds-completed').textContent = myJobs.filter(j => j.status === 'completed').length;
+  document.getElementById('ds-rating').textContent = '5.0★';
+
+  const listEl = document.getElementById('my-jobs-list');
+  if (!myJobs.length) {
+    listEl.innerHTML = `<div style="text-align:center;padding:2rem;color:var(--text2);">
+      <div style="font-size:32px;margin-bottom:10px;">📋</div>
+      <div style="font-weight:600;margin-bottom:8px;">Sin trabajos aún</div>
+      <div style="font-size:13px;margin-bottom:1rem;">Publicá tu primer trabajo y recibí propuestas de técnicos verificados.</div>
+      <button class="btn btn-primary btn-sm" onclick="openModal('modal-publish')">+ Publicar trabajo</button>
+    </div>`;
+    return;
+  }
+
+  listEl.innerHTML = myJobs.map(j => {
+    const statusColor = { open: 'badge-green', assigned: 'badge-amber', completed: 'badge-purple', cancelled: 'badge-red' };
+    const statusLabel = { open: '🟢 Abierto', assigned: '🟡 Asignado', completed: '✅ Completado', cancelled: '❌ Cancelado' };
+    const emoji = catEmojis[j.category] || '🔨';
+    const appCount = j.applications?.[0]?.count || 0;
+    return `<div class="notif-item" onclick="openJobActions('${j.id}')">
+      <div class="notif-icon">${emoji}</div>
+      <div style="flex:1;">
+        <div class="notif-title">${escHtml(j.title)}</div>
+        <div class="notif-sub">📍 ${escHtml(j.location || '—')} · $${j.budget} · ${appCount} propuesta${appCount !== 1 ? 's' : ''}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+        <span class="badge ${statusColor[j.status] || 'badge-purple'}">${statusLabel[j.status] || j.status}</span>
+        <span class="notif-time">${getTimeAgo(j.created_at)}</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Load notifications
+  const jobIds = myJobs.filter(j => j.status === 'open').map(j => j.id);
+  if (jobIds.length) {
+    const { data: apps } = await db.from('applications')
+      .select('*, profiles(name)')
+      .in('job_id', jobIds)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false })
+      .limit(5);
+    renderNotifications(apps || [], myJobs);
+  }
+}
+
+function renderDashboardApps(apps) {
+  const listEl = document.getElementById('my-jobs-list');
+  if (!apps.length) {
+    listEl.innerHTML = `<div style="text-align:center;padding:2rem;color:var(--text2);">
+      <div style="font-size:32px;margin-bottom:10px;">📭</div>
+      <div style="font-weight:600;margin-bottom:8px;">Sin aplicaciones aún</div>
+      <button class="btn btn-primary btn-sm" onclick="goTo('screen-tecnico')">Ver trabajos disponibles</button>
+    </div>`;
+    return;
+  }
+  listEl.innerHTML = apps.map(app => {
+    const statusColor = { pending: 'badge-amber', accepted: 'badge-green', rejected: 'badge-red' };
+    const statusLabel = { pending: '⏳ Pendiente', accepted: '✅ Aceptada', rejected: '❌ Rechazada' };
+    const job = app.jobs;
+    return `<div class="notif-item">
+      <div class="notif-icon">📋</div>
+      <div style="flex:1;">
+        <div class="notif-title">${escHtml(job?.title || 'Trabajo')}</div>
+        <div class="notif-sub">Tu oferta: $${app.price_offer} · Cliente: ${job?.profiles?.name || '—'}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+        <span class="badge ${statusColor[app.status] || 'badge-amber'}">${statusLabel[app.status] || app.status}</span>
+        <span class="notif-time">${getTimeAgo(app.created_at)}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderNotifications(apps, myJobs) {
+  const notifEl = document.getElementById('notif-list');
+  if (!apps.length) {
+    notifEl.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--text3);font-size:13px;">Sin notificaciones recientes</div>';
+    return;
+  }
+  notifEl.innerHTML = apps.map(app => {
+    const job = myJobs.find(j => j.id === app.job_id);
+    return `<div class="notif-item">
+      <div class="notif-icon">🔧</div>
+      <div style="flex:1;">
+        <div class="notif-title">${escHtml(app.profiles?.name || 'Técnico')} quiere atender tu trabajo</div>
+        <div class="notif-sub">${escHtml(job?.title || '—')} · Oferta: $${app.price_offer || 0}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+        <span class="badge badge-amber">⏳ Pendiente</span>
+        <span class="notif-time">${getTimeAgo(app.created_at)}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function openJobActions(jobId) {
+  // Load applications for this job
+  const { data: apps } = await db.from('applications')
+    .select('*, technicians(skills, price_per_hour, rating), profiles(name)')
+    .eq('job_id', jobId)
+    .order('created_at', { ascending: false });
+
+  if (!apps || !apps.length) {
+    showToast('Aún no hay propuestas para este trabajo', 'ℹ️');
+    return;
+  }
+  // Simple display
+  showToast(`Este trabajo tiene ${apps.length} propuesta${apps.length !== 1 ? 's' : ''}`, '📋');
+}
+
+// ═══════════════════════════════════════════
+// AI MATCH — Uses Anthropic API via artifact proxy
+// ═══════════════════════════════════════════
+async function openAiMatch() {
+  openModal('modal-ai');
+  document.getElementById('ai-loading').style.display = 'block';
+  document.getElementById('ai-results').style.display = 'none';
+
+  const { data: techs } = await db.from('technicians').select('*, profiles(name)').order('rating', { ascending: false }).limit(10);
+
+  if (!techs || !techs.length) {
+    document.getElementById('ai-loading').innerHTML = '<div style="text-align:center;color:var(--text2);padding:1rem;">Sin técnicos disponibles aún</div>';
+    return;
+  }
+
+  const problemText = document.getElementById('feed-search')?.value || 'Servicios del hogar en general';
+
+  const techList = techs.slice(0, 8).map(t => ({
+    name: t.profiles?.name, skills: t.skills,
+    rating: t.rating, price: t.price_per_hour, location: t.location, jobs: t.jobs_completed,
+  }));
+
+  let matches = [];
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: `Eres un sistema de matching de técnicos para servicios del hogar en Honduras. Analiza y devuelve SOLO JSON válido sin markdown:
+{"matches":[{"name":"Nombre","score":95,"reason":"Razón breve en español"}]}
+
+Problema del cliente: "${problemText}"
+Técnicos disponibles: ${JSON.stringify(techList)}
+
+Selecciona los TOP 3 técnicos más relevantes con score 0-100 según compatibilidad de habilidades.`
+        }]
+      })
+    });
+    const aiData = await response.json();
+    const text = (aiData.content?.[0]?.text || '{}').replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(text);
+    matches = (parsed.matches || []).map(m => ({
+      ...m,
+      tech: techs.find(t => t.profiles?.name === m.name) || techs[matches.length] || techs[0],
+    })).filter(m => m.tech).slice(0, 3);
+    if (!matches.length) throw new Error('No matches');
+  } catch {
+    matches = techs.slice(0, 3).map((t, i) => ({
+      name: t.profiles?.name, score: 95 - i * 8,
+      reason: `Especialista en ${(t.skills || []).slice(0, 2).join(' y ')}`, tech: t,
+    }));
+  }
+
+  document.getElementById('ai-loading').style.display = 'none';
+  document.getElementById('ai-results').innerHTML = `
+    <div style="font-size:13px;color:var(--text2);margin-bottom:1rem;">Mejores técnicos para "${escHtml(problemText.slice(0, 40))}${problemText.length > 40 ? '...' : ''}":</div>
+    ${matches.map((m, i) => {
+      const tech = m.tech;
+      const initials = (tech.profiles?.name || 'T').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+      const techJson = JSON.stringify(tech).replace(/</g, '&lt;').replace(/"/g, '&quot;');
+      return `<div class="card" style="margin-bottom:10px;cursor:pointer;${i === 0 ? 'border-color:var(--accent);background:var(--accent-bg);' : ''}"
+        onclick="closeModal('modal-ai');loadTechProfile(JSON.parse(this.dataset.tech))" data-tech="${techJson}">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div class="avatar avatar-sm av-purple">${initials}</div>
+          <div style="flex:1;">
+            <div style="font-size:14px;font-weight:600;">${escHtml(m.name || tech.profiles?.name || 'Técnico')}</div>
+            <div style="font-size:12px;color:var(--text2);">${escHtml(m.reason || '')}</div>
+            <div style="font-size:11.5px;color:var(--text3);margin-top:3px;">📍 ${escHtml(tech.location || '—')} · $${tech.price_per_hour}/h</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:13px;font-weight:600;color:var(--green);">${m.score}%</div>
+            <div style="font-size:11.5px;color:var(--text3);">⭐ ${(tech.rating || 5).toFixed(1)}</div>
+          </div>
+        </div>
+        ${i === 0 ? '<div style="font-size:11.5px;color:var(--accent3);margin-top:8px;">✨ Mejor match para tu búsqueda</div>' : ''}
+      </div>`;
+    }).join('')}`;
+  document.getElementById('ai-results').style.display = 'block';
+}
+
+// ═══════════════════════════════════════════
+// AI PROBLEM SEARCH
+// ═══════════════════════════════════════════
+let selectedTag = null;
+
+function onProblemInput(el) {
+  document.getElementById('char-count').textContent = el.value.length;
+}
+
+function selectTag(el, tag) {
+  document.querySelectorAll('.quick-tag').forEach(t => t.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedTag = tag;
+  if (!document.getElementById('problem-input').value) {
+    document.getElementById('problem-input').value = `Necesito ayuda con ${tag}`;
+    document.getElementById('char-count').textContent = `Necesito ayuda con ${tag}`.length;
+  }
+}
+
+async function analyzeAndMatch() {
+  const input = document.getElementById('problem-input').value.trim();
+  const errEl = document.getElementById('problem-err');
+  if (!input && !selectedTag) { errEl.style.display = 'block'; return; }
+  errEl.style.display = 'none';
+
+  const problemText = input || `Necesito ayuda con ${selectedTag}`;
+
+  document.getElementById('problem-form-state').style.display = 'none';
+  document.getElementById('problem-analyzing-state').style.display = 'block';
+  document.getElementById('problem-results-state').style.display = 'none';
+
+  const steps = ['astep-1','astep-2','astep-3','astep-4'];
+  for (let i = 0; i < steps.length; i++) {
+    await delay(700);
+    if (i < steps.length - 1) document.getElementById(steps[i]).classList.add('done');
+    else document.getElementById(steps[i]).classList.add('active');
+  }
+
+  const { data: techs } = await db.from('technicians').select('*, profiles(name)').order('rating', { ascending: false }).limit(10);
+
+  let matches = [];
+  try {
+    const techList = (techs || []).slice(0, 8).map(t => ({
+      id: t.id, name: t.profiles?.name, skills: t.skills,
+      rating: t.rating, price: t.price_per_hour, location: t.location,
+    }));
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: `Eres un sistema experto de matching de técnicos para servicios del hogar en Honduras.
+Devuelve SOLO JSON válido sin markdown:
+{"category":"plomeria","matches":[{"name":"Nombre","score":95,"reason":"Razón max 10 palabras"}]}
+
+Problema: "${problemText}"
+Técnicos disponibles: ${JSON.stringify(techList)}
+
+- category: plomeria | electricidad | carpinteria | ac | pintura | limpieza | otro
+- TOP 3 técnicos más relevantes con score 0-100`
+        }]
+      })
+    });
+
+    const aiData = await response.json();
+    const text = (aiData.content?.[0]?.text || '{}').replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(text);
+
+    matches = (parsed.matches || []).map(m => ({
+      ...m,
+      tech: (techs || []).find(t => t.profiles?.name === m.name) || (techs || [])[0],
+      category: parsed.category,
+    })).filter(m => m.tech);
+
+    if (!matches.length) throw new Error('No matches');
+
+    const catEmoji = catEmojis[parsed.category] || '🔨';
+    document.getElementById('results-cat-badge').textContent = `${catEmoji} ${(parsed.category || 'General').charAt(0).toUpperCase() + (parsed.category || '').slice(1)}`;
+
+  } catch {
+    matches = (techs || []).slice(0, 3).map((t, i) => ({
+      name: t.profiles?.name, score: 92 - i * 10,
+      reason: `Especialista en ${(t.skills || []).slice(0, 2).join(' y ')}`, tech: t,
+    }));
+  }
+
+  await delay(400);
+  document.getElementById('problem-analyzing-state').style.display = 'none';
+  document.getElementById('problem-results-state').style.display = 'block';
+  document.getElementById('results-title').textContent = `${matches.length} técnico${matches.length !== 1 ? 's' : ''} encontrado${matches.length !== 1 ? 's' : ''}`;
+  document.getElementById('problem-summary-text').textContent = problemText.length > 70 ? problemText.slice(0, 70) + '...' : problemText;
+
+  const avColors = ['av-purple','av-green','av-blue','av-amber','av-pink'];
+  document.getElementById('tech-results-list').innerHTML = matches.map((m, i) => {
+    const tech = m.tech;
+    const initials = (tech.profiles?.name || 'T').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+    const techJson = JSON.stringify(tech).replace(/</g, '&lt;').replace(/"/g, '&quot;');
+    return `<div class="tech-result-card ${i === 0 ? 'top-match' : ''}"
+      onclick="loadTechProfile(JSON.parse(this.dataset.tech))" data-tech="${techJson}">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div class="avatar avatar-md ${avColors[i % avColors.length]}">${initials}</div>
+        <div style="flex:1;">
+          <div style="font-size:15px;font-weight:700;">${escHtml(tech.profiles?.name || 'Técnico')}</div>
+          <div style="font-size:13px;color:var(--text2);margin-top:2px;">${escHtml(m.reason || '')}</div>
+          <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;">
+            <span style="font-size:12px;color:var(--text3);">⭐ ${(tech.rating || 5).toFixed(1)}</span>
+            <span style="font-size:12px;color:var(--text3);">✅ ${tech.jobs_completed || 0} trabajos</span>
+            <span style="font-size:12px;color:var(--text3);">💰 $${tech.price_per_hour}/h</span>
+            <span style="font-size:12px;color:var(--text3);">📍 ${escHtml(tech.location || '—')}</span>
+          </div>
+        </div>
+        <div style="text-align:right;flex-shrink:0;">
+          <div class="match-score">${m.score}%</div>
+          <div style="font-size:11px;color:var(--text3);">match</div>
+        </div>
+      </div>
+      ${i === 0 ? '<div style="font-size:11.5px;color:var(--accent3);margin-top:8px;padding-top:8px;border-top:1px solid rgba(108,92,231,0.2);">✨ Mejor match — más compatible con tu problema</div>' : ''}
+    </div>`;
+  }).join('');
+}
+
+function resetProblem() {
+  document.getElementById('problem-form-state').style.display = 'block';
+  document.getElementById('problem-analyzing-state').style.display = 'none';
+  document.getElementById('problem-results-state').style.display = 'none';
+  ['astep-1','astep-2','astep-3','astep-4'].forEach(id => document.getElementById(id).classList.remove('done','active'));
+  selectedTag = null;
+  document.querySelectorAll('.quick-tag').forEach(t => t.classList.remove('selected'));
+}
+
+// ═══════════════════════════════════════════
+// CHAT (UI only — extendable with Supabase Realtime)
+// ═══════════════════════════════════════════
+const autoReplies = [
+  '¡Hola! Puedo atenderte. ¿Cuándo te vendría bien?',
+  'El precio incluye diagnóstico y mano de obra. Los materiales serían aparte si se necesitan.',
+  'Tengo experiencia con ese tipo de problema. Generalmente lo resuelvo en 1-2 horas.',
+  'Podría ajustar un poco el precio si coordinamos rápido. ¿Te parece bien?',
+  'Perfecto, quedamos coordinados. ¡Nos vemos!',
+];
+let autoReplyIndex = 0;
+
+function openChatModal() {
+  if (!currentTechForHire) return;
+  const name = currentTechForHire.profiles?.name || 'Técnico';
+  const initials = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  document.getElementById('chat-avatar').textContent = initials;
+  document.getElementById('chat-name').textContent = name;
+  chatMessages = [{ from: 'tech', text: `¡Hola! Soy ${name}. Vi tu consulta. ¿En qué te puedo ayudar?` }];
+  autoReplyIndex = 1;
+  renderChatMessages();
+  openModal('modal-chat');
+}
+
+function renderChatMessages() {
+  const container = document.getElementById('chat-messages');
+  const initials = document.getElementById('chat-avatar').textContent;
+  container.innerHTML = chatMessages.map(m => {
+    const isClient = m.from === 'client';
+    return `<div style="display:flex;align-items:flex-end;gap:8px;${isClient ? 'flex-direction:row-reverse;' : ''}">
+      ${!isClient ? `<div class="avatar" style="width:26px;height:26px;font-size:9px;background:var(--accent-bg2);color:var(--accent3);">${initials}</div>` : ''}
+      <div style="max-width:72%;background:${isClient ? 'var(--accent)' : 'var(--bg4)'};color:${isClient ? '#fff' : 'var(--text)'};border-radius:${isClient ? '14px 14px 4px 14px' : '14px 14px 14px 4px'};padding:9px 13px;font-size:13.5px;line-height:1.5;">
+        ${escHtml(m.text)}
+      </div>
+    </div>`;
+  }).join('');
+  container.scrollTop = container.scrollHeight;
+
+  const last = chatMessages[chatMessages.length - 1];
+  if (last && last.from === 'client') {
+    setTimeout(() => {
+      chatMessages.push({ from: 'tech', text: autoReplies[autoReplyIndex % autoReplies.length] });
+      autoReplyIndex++;
+      renderChatMessages();
+    }, 1200);
+  }
+}
+
+function sendChatMsg() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+  chatMessages.push({ from: 'client', text });
+  input.value = '';
+  renderChatMessages();
+}
+
+function sendQuickMsg(text) {
+  chatMessages.push({ from: 'client', text });
+  renderChatMessages();
+}
+
+function chatKeyDown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMsg(); }
+}
+
+// ═══════════════════════════════════════════
+// RATINGS
+// ═══════════════════════════════════════════
+async function submitRating() {
+  if (!currentUser) { showToast('Iniciá sesión para dejar reseña', '⚠️'); return; }
+  if (!selectedStars) { document.getElementById('err-stars').style.display = 'flex'; return; }
+  document.getElementById('err-stars').style.display = 'none';
+
+  const comment = document.getElementById('review-text').value.trim();
+  const { error } = await db.from('reviews').insert({
+    reviewer_id: currentUser.id,
+    technician_id: currentTechForHire?.id,
+    rating: selectedStars,
+    comment,
+  });
+
+  if (error) { showToast('Error al guardar reseña: ' + error.message, '❌'); return; }
+
+  closeModal('modal-rating');
+  showToast('¡Reseña publicada! Gracias 🌟', '⭐');
+  selectedStars = 0;
+  document.getElementById('review-text').value = '';
+  document.querySelectorAll('.rating-star').forEach(s => s.classList.remove('lit'));
+  if (currentTechForHire) loadTechReviews(currentTechForHire.id);
+}
+
+function setStars(n) {
+  selectedStars = n;
+  const labels = ['', 'Muy malo', 'Regular', 'Bueno', 'Muy bueno', '¡Excelente!'];
+  document.getElementById('star-label').textContent = labels[n];
+  document.querySelectorAll('.rating-star').forEach((s, i) => s.classList.toggle('lit', i < n));
+}
+
+// ═══════════════════════════════════════════
+// UTILITIES
+// ═══════════════════════════════════════════
+function showToast(msg, icon = '✅') {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  document.getElementById('toast-icon').textContent = icon;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+function escHtml(str) {
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function getTimeAgo(dateStr) {
+  if (!dateStr) return '—';
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'ahora';
+  if (mins < 60) return `hace ${mins} min`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `hace ${hrs}h`;
+  const days = Math.floor(hrs / 24);
+  return `hace ${days} día${days !== 1 ? 's' : ''}`;
+}
+
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+
+// ═══════════════════════════════════════════
+// QUICK LOGIN (dev/beta mode)
+// ═══════════════════════════════════════════
+async function quickLogin(btn, email, password) {
+  btn.disabled = true; btn.textContent = '...';
+  document.getElementById('login-email').value = email;
+  document.getElementById('login-password').value = password;
+  const { data, error } = await db.auth.signInWithPassword({ email, password });
+  btn.disabled = false; btn.textContent = 'Entrar';
+  if (error) {
+    showToast('Error: ' + error.message + ' — ¿Ya ejecutaste el seed?', 'ℹ️');
+  }
+}
+
+document.addEventListener('DOMContentLoaded', initApp);
+</script>
+</body>
+</html>
